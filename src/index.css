@@ -1,0 +1,166 @@
+:root {
+  color-scheme: dark;
+  font-family: 'Pretendard', system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  --ink: #f4efe6;
+  --quiet: #b9b1a4;
+  --glass: rgba(18, 16, 14, 0.62);
+  --accent: #ffd27a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: #0d0c0b;
+  color: var(--ink);
+  overflow: hidden;
+  user-select: none;
+}
+
+canvas {
+  touch-action: none;
+}
+
+.hud {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+.hud.top {
+  top: 16px;
+}
+
+.hud.bottom {
+  bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.hint,
+.picked {
+  font-size: 13px;
+  color: var(--quiet);
+  background: var(--glass);
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.picked {
+  font-family: ui-monospace, monospace;
+  user-select: text;
+}
+
+.time {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--glass);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.time input {
+  width: min(260px, 50vw);
+  accent-color: var(--accent);
+}
+
+button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--glass);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+button.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  white-space: nowrap;
+  background: var(--glass);
+  border: 1px solid rgba(255, 210, 122, 0.5);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  backdrop-filter: blur(6px);
+}
+
+.tag span {
+  color: var(--quiet);
+  font-size: 12px;
+}
+
+.panel {
+  position: fixed;
+  top: 64px;
+  right: 16px;
+  bottom: 72px;
+  width: min(380px, calc(100vw - 32px));
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  animation: slide 0.35s ease-out;
+}
+
+.panel h1 {
+  margin: 16px 0 4px;
+  font-size: 24px;
+}
+
+.panel p {
+  margin: 0 0 8px;
+  color: var(--quiet);
+}
+
+.panel .soon {
+  margin-top: 24px;
+  font-size: 13px;
+}
+
+.panel nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+kbd {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-left: 4px;
+}
+
+@keyframes slide {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
