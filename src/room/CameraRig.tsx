@@ -7,7 +7,7 @@ import { room, type Hotspot } from './config'
 // 물체가 선택되면 그 물체 앞으로 부드럽게 다가간다.
 export function CameraRig({ focused, dragged }: { focused: Hotspot | null; dragged: React.RefObject<boolean> }) {
   const { camera, gl } = useThree()
-  const look = useRef({ yaw: 0, pitch: 0 })
+  const look = useRef({ yaw: room.startYaw, pitch: 0 })
   const eye = useRef(new Vector3(...room.eye))
   const target = useRef(new Vector3())
 
