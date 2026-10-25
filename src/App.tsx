@@ -1,11 +1,10 @@
 import { Canvas, type ThreeEvent } from '@react-three/fiber'
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { CameraRig } from './room/CameraRig'
-import { dims, hotspots, room, type Hotspot } from './room/config'
+import { hotspots, room, type Hotspot } from './room/config'
 import { Hotspots } from './room/Hotspots'
-import { Lights } from './room/Lights'
-import { Room } from './room/Room'
-import { hourLabel, moodAt } from './room/timeOfDay'
+import { PanoSphere } from './room/PanoSphere'
+import { hourLabel } from './room/time'
 
 function nowHour() {
   const d = new Date()
@@ -22,7 +21,6 @@ export default function App() {
   const [placing, setPlacing] = useState(false)
   const [picked, setPicked] = useState<string | null>(null)
   const dragged = useRef(false)
-  const mood = useMemo(() => moodAt(hour), [hour])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -35,23 +33,24 @@ export default function App() {
   const pick = (e: ThreeEvent<MouseEvent>) => {
     if (!placing || dragged.current) return
     e.stopPropagation()
-    const p = e.point
-    setPicked(`[${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}]`)
+    // 클릭한 방향을 config.ts의 yaw / pitch(도)로 바꿔 보여준다.
+    const d = e.point.clone().normalize()
+    const yaw = (Math.atan2(d.x, -d.z) * 180) / Math.PI
+    const pitch = (Math.asin(d.y) * 180) / Math.PI
+    setPicked(`yaw: ${yaw.toFixed(0)}, pitch: ${pitch.toFixed(0)}`)
   }
 
   return (
     <>
       <Canvas
-        shadows
-        camera={{ fov: 70, near: 0.01, far: 50, position: room.eye }}
+        flat
+        linear
+        camera={{ fov: room.fov.start, near: 0.1, far: 100, position: [0, 0, 0] }}
         onPointerMissed={() => !dragged.current && !placing && setFocused(null)}
       >
         <color attach="background" args={['#0d0c0b']} />
-        <Lights mood={mood} lampOn={lampOn} />
         <Suspense fallback={null}>
-          <group onClick={pick}>
-            <Room mood={mood} />
-          </group>
+          <PanoSphere hour={hour} lampOn={lampOn} onPick={pick} />
         </Suspense>
         <Hotspots showBoxes={placing} focused={focused} onSelect={setFocused} dragged={dragged} />
         <CameraRig focused={focused} dragged={dragged} />
@@ -59,7 +58,7 @@ export default function App() {
 
       <header className="hud top">
         <span className="brand">0zong의 방</span>
-        <span className="hint">드래그해서 둘러보고, 물건에 마우스를 올려 보세요.</span>
+        <span className="hint">드래그해서 둘러보고, 휠로 확대하고, 물건에 마우스를 올려 보세요.</span>
       </header>
 
       <footer className="hud bottom">
@@ -75,7 +74,7 @@ export default function App() {
         </button>
         {placing && (
           <span className="picked">
-            {picked ? `클릭한 좌표 ${picked}` : `방을 클릭하면 좌표가 나와요 (방 ${dims.W}×${dims.L}m)`}
+            {picked ? `클릭한 방향 ${picked}` : '사진을 클릭하면 그 방향의 yaw / pitch가 나와요'}
           </span>
         )}
       </footer>

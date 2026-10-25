@@ -1,98 +1,72 @@
-// 방 설정. 단위는 미터.
-// 좌표: x = 포스터 벽(0) → 모니터 벽(W), z = 창문 벽(0) → 옷장 쪽 벽(L), y = 바닥(0) → 천장.
-// 치수는 손 평면도에서 읽은 임시값이다. 실제 치수를 받으면 dims만 고치면 된다.
-
-export type Vec3 = [number, number, number]
-
-export const dims = {
-  W: 2.9, // 포스터 벽 ↔ 모니터 벽 (임시)
-  L: 3.8, // 창문 벽 ↔ 옷장 쪽 벽 (임시)
-  H: 2.3, // 천장 높이 (임시)
-}
+// 방 설정. 방은 의자 자리에서 찍은 360도 사진(equirectangular, 가로:세로 = 2:1)이다.
+// 각도는 모두 도(°) 단위.
+//   yaw   : 사진 가운데(가로 50%)가 0, 오른쪽으로 돌수록 +, 왼쪽으로 돌수록 −. 범위 −180 ~ 180.
+//   pitch : 눈높이가 0, 위가 +, 아래가 −.
+// 배치 모드에서 사진을 클릭하면 그 자리의 yaw / pitch가 나온다.
 
 export const room = {
-  // 의자에 앉은 눈 위치. 모니터 책상 앞.
-  eye: [1.95, 1.15, 1.85] as Vec3,
-  // 처음 바라보는 방향 (라디안, 0 = 창문 쪽, π/2 = 모니터 벽)
-  startYaw: Math.PI / 2,
-  pitchLimit: 50,
+  // 처음 바라보는 방향
+  startYaw: 90,
+  startPitch: -5,
+  pitchLimit: 80,
+  fov: { start: 75, min: 35, max: 90 },
+  // 화면 좌우로 최소한 보여줄 각도
+  minHorizontalFov: 60,
 }
+
+// 시간대별 사진. 슬라이더 시간에 맞춰 가까운 두 장을 부드럽게 섞는다.
+// lamp가 있으면 조명을 켰을 때 그 사진으로 바뀐다(주로 밤 사진에 둔다).
+// 지금은 조립식 3D 방으로 만든 임시 사진이고, 실제 사진을 찍으면 같은 자리에 바꿔 넣는다.
+export type PanoKey = { hour: number; src: string; lamp?: string }
+
+export const panos: PanoKey[] = [
+  { hour: 7.5, src: '/pano/sample-morning.jpg' },
+  { hour: 12, src: '/pano/sample-noon.jpg' },
+  { hour: 18.5, src: '/pano/sample-sunset.jpg' },
+  { hour: 22, src: '/pano/sample-night.jpg', lamp: '/pano/sample-night-lamp.jpg' },
+]
 
 export type Hotspot = {
   id: string
   label: string
   description: string
-  position: Vec3
-  size: Vec3
-  // 클릭했을 때 카메라가 서는 자리
-  focus: { position: Vec3; lookAt: Vec3 }
+  yaw: number
+  pitch: number
+  // 사진에서 물건이 차지하는 가로 / 세로 각도
+  width: number
+  height: number
 }
-
-const { W } = dims
 
 export const hotspots: Hotspot[] = [
   {
     id: 'monitor-left',
     label: '왼쪽 모니터',
     description: '게임 기록과 피드',
-    position: [W - 0.32, 1.06, 1.58],
-    size: [0.08, 0.38, 0.62],
-    focus: { position: [W - 0.95, 1.08, 1.62], lookAt: [W - 0.32, 1.06, 1.58] },
+    yaw: 67,
+    pitch: -7,
+    width: 40,
+    height: 26,
   },
   {
     id: 'monitor-right',
     label: '오른쪽 모니터',
     description: '보안 공부 노트',
-    position: [W - 0.32, 1.04, 2.16],
-    size: [0.08, 0.33, 0.55],
-    focus: { position: [W - 0.95, 1.06, 2.1], lookAt: [W - 0.32, 1.04, 2.16] },
+    yaw: 113,
+    pitch: -9,
+    width: 34,
+    height: 22,
   },
-  {
-    id: 'screen',
-    label: '걸이형 스크린',
-    description: '내가 만든 영상',
-    position: [W - 0.04, 1.75, 1.85],
-    size: [0.04, 0.9, 1.2],
-    focus: { position: [W - 1.6, 1.6, 1.85], lookAt: [W - 0.04, 1.7, 1.85] },
-  },
-  {
-    id: 'cards',
-    label: '트럼프 카드',
-    description: '홀덤',
-    position: [2.08, 0.765, 0.75],
-    size: [0.12, 0.05, 0.12],
-    focus: { position: [1.75, 1.1, 1.05], lookAt: [2.08, 0.76, 0.75] },
-  },
-  {
-    id: 'headset',
-    label: '헤드셋',
-    description: '좋아하는 소리와 음악',
-    position: [2.25, 0.79, 0.6],
-    size: [0.2, 0.1, 0.22],
-    focus: { position: [1.85, 1.12, 0.95], lookAt: [2.25, 0.78, 0.6] },
-  },
-  {
-    id: 'novel',
-    label: '소설책',
-    description: '내가 그린 소설 속 세계',
-    position: [2.38, 0.8, 0.82],
-    size: [0.2, 0.16, 0.26],
-    focus: { position: [2.0, 1.15, 1.15], lookAt: [2.38, 0.8, 0.82] },
-  },
-  {
-    id: 'posters',
-    label: '포스터',
-    description: '영화 기록',
-    position: [0.02, 1.6, 2.65],
-    size: [0.04, 0.6, 1.5],
-    focus: { position: [1.4, 1.5, 2.65], lookAt: [0.02, 1.55, 2.65] },
-  },
-  {
-    id: 'bed',
-    label: '침대',
-    description: '시간 정하고 자기',
-    position: [0.55, 0.35, 1.0],
-    size: [1.1, 0.5, 2.0],
-    focus: { position: [1.7, 1.5, 1.6], lookAt: [0.55, 0.4, 1.0] },
-  },
+  { id: 'screen', label: '걸이형 스크린', description: '내가 만든 영상', yaw: 90, pitch: 33, width: 60, height: 30 },
+  { id: 'cards', label: '트럼프 카드', description: '홀덤', yaw: 6, pitch: -19, width: 8, height: 8 },
+  { id: 'headset', label: '헤드셋', description: '좋아하는 소리와 음악', yaw: 14, pitch: -16, width: 8, height: 9 },
+  { id: 'novel', label: '소설책', description: '내가 그린 소설 속 세계', yaw: 23, pitch: -17, width: 9, height: 12 },
+  { id: 'posters', label: '포스터', description: '영화 기록', yaw: -113, pitch: 12, width: 38, height: 18 },
+  { id: 'bed', label: '침대', description: '시간 정하고 자기', yaw: -59, pitch: -26, width: 70, height: 34 },
 ]
+
+// yaw / pitch(도) → 카메라 기준 방향. tools/stitch.sh로 만든 사진과 같은 약속이다.
+export function direction(yaw: number, pitch: number): [number, number, number] {
+  const y = (yaw * Math.PI) / 180
+  const p = (pitch * Math.PI) / 180
+  return [Math.sin(y) * Math.cos(p), Math.sin(p), -Math.cos(y) * Math.cos(p)]
+}
