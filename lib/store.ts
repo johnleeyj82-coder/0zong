@@ -6,6 +6,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { DB, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
 import type { Movie } from "./movies";
+import type { Track } from "./music";
 import { EXAMPLE_MOVIES } from "./movies.example";
 
 const FILE = process.env.ROOM_DB_FILE || path.join(process.cwd(), "data", "db.json");
@@ -134,6 +135,43 @@ export function importMovies(list: Movie[]): Promise<{ added: number; updated: n
     }
     db.movies = movies;
     return { added, updated };
+  });
+}
+
+export async function listTracks(): Promise<Track[]> {
+  return (await read()).tracks ?? [];
+}
+
+export function addTrack(t: Track): Promise<Track> {
+  return mutate((db) => { db.tracks = [...(db.tracks ?? []), t]; return t; });
+}
+
+/** Changes title, artist, or credit; null if there is no such track. */
+export function updateTrack(id: string, o: Pick<Track, "title" | "artist" | "credit">): Promise<Track | null> {
+  return mutate((db) => {
+    const t = db.tracks?.find((x) => x.id === id);
+    if (!t) return null;
+    Object.assign(t, o);
+    return t;
+  });
+}
+
+/** Reorders by the given ids; ids it does not mention keep their relative order at the end. */
+export function reorderTracks(ids: string[]): Promise<Track[]> {
+  return mutate((db) => {
+    const list = db.tracks ?? [];
+    const rank = new Map(ids.map((id, i) => [id, i]));
+    db.tracks = [...list].sort((a, b) => (rank.get(a.id) ?? ids.length) - (rank.get(b.id) ?? ids.length));
+    return db.tracks;
+  });
+}
+
+/** Removes the record and returns it, so the caller can delete the file too. */
+export function removeTrack(id: string): Promise<Track | null> {
+  return mutate((db) => {
+    const t = db.tracks?.find((x) => x.id === id) ?? null;
+    if (t) db.tracks = db.tracks!.filter((x) => x.id !== id);
+    return t;
   });
 }
 

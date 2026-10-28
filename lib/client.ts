@@ -3,6 +3,7 @@
 // this browser's localStorage instead, and owner mode uses the demo password "demo". Never enable demo mode in production.
 import type { Dashboard, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
 import type { Movie, MovieInput } from "./movies";
+import type { Track } from "./music";
 import type { TmdbHit, TmdbMovie } from "./tmdb.types";
 import { EXAMPLE_MOVIES } from "./movies.example";
 
@@ -192,6 +193,46 @@ export async function tmdbDetails(id: number): Promise<Result<TmdbMovie>> {
   if (DEMO) return { ok: false, error: NO_TMDB_DEMO };
   const r = await call<{ movie: TmdbMovie }>(`/api/tmdb?id=${id}`);
   return r.ok ? { ok: true, data: r.data.movie } : r;
+}
+
+/* ---------- music ---------- */
+const NO_UPLOAD_DEMO = "미리보기에는 서버가 없어서 곡을 올릴 수 없어요. 환경음과 듣기 모드는 쓸 수 있어요.";
+
+export async function getTracks(): Promise<Track[]> {
+  if (DEMO) return [];
+  const r = await call<{ tracks: Track[] }>("/api/music");
+  return r.ok ? r.data.tracks : [];
+}
+
+export const trackUrl = (t: Track) => `/api/music/file/${t.id}`;
+
+/** Owner only. Multipart, so it does not go through call() (which sends JSON). */
+export async function uploadTrack(form: FormData): Promise<Result<Track>> {
+  if (DEMO) return { ok: false, error: NO_UPLOAD_DEMO };
+  try {
+    const r = await fetch("/api/music", { method: "POST", body: form, credentials: "same-origin" });
+    const data = await r.json().catch(() => ({}));
+    return r.ok ? { ok: true, data: data.track } : { ok: false, error: data.error || "올리지 못했어요. 다시 시도해주세요." };
+  } catch {
+    return { ok: false, error: "서버에 연결하지 못했어요. 인터넷 연결을 확인해주세요." };
+  }
+}
+
+export async function editTrack(id: string, o: Pick<Track, "title" | "artist" | "credit">): Promise<Result<Track>> {
+  if (DEMO) return { ok: false, error: NO_UPLOAD_DEMO };
+  const r = await call<{ track: Track }>("/api/music", { method: "PUT", body: JSON.stringify({ id, ...o }) });
+  return r.ok ? { ok: true, data: r.data.track } : r;
+}
+
+export async function reorderTracks(order: string[]): Promise<Result<Track[]>> {
+  if (DEMO) return { ok: false, error: NO_UPLOAD_DEMO };
+  const r = await call<{ tracks: Track[] }>("/api/music", { method: "PATCH", body: JSON.stringify({ order }) });
+  return r.ok ? { ok: true, data: r.data.tracks } : r;
+}
+
+export async function deleteTrack(id: string): Promise<Result<unknown>> {
+  if (DEMO) return { ok: false, error: NO_UPLOAD_DEMO };
+  return call(`/api/music?id=${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
 export async function getDashboard(): Promise<Result<Dashboard>> {

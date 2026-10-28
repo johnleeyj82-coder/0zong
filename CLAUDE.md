@@ -30,8 +30,10 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `app/rooms/bodies.tsx` | per-room drawer content (all example data for now; movie reads `getMovies()`) |
 | `lib/movies.ts` | movie scoring (6 criteria = 100, stars = total/20), sort, summary; examples in `lib/movies.example.ts` |
 | `app/movie/` + `app/components/movie/` | `/movie` score anatomy page (own route); owner add/edit/delete, TMDB search, 0zong-cinema import |
+| `app/components/music/` | site-wide player (`PlayerProvider` in `app/layout.tsx`): audio engine with generated rain/fire, mini player, listening mode, music drawer |
+| `lib/files.ts` | server-only audio file storage (`data/music/`), format sniffing; swap with `lib/store.ts` for deployment |
 | `lib/tmdb.ts` | server-only TMDB client (`TMDB_API_KEY` in `.env.local`); only `/api/tmdb` (owner only) calls it |
-| `app/api/*` | visit, auth, events, guestbook, rooms, admin, movies (+ import), tmdb |
+| `app/api/*` | visit, auth, events, guestbook, rooms, admin, movies (+ import), tmdb, music (+ `file/[id]` with Range) |
 | `lib/store.ts` | the only storage layer (JSON file `data/db.json`) |
 | `lib/auth.ts` | owner check (scrypt), signed HTTP-only cookie |
 | `lib/client.ts` | browser API; `NEXT_PUBLIC_DEMO=1` switches to localStorage |
@@ -45,6 +47,9 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 - Password hash format `scrypt:<salt>:<hash>` — no `$` (dotenv expands it). Secrets only in `.env.local`.
 - Framer-motion elements that need centering use `style={{ x: "-50%" }}` (framer overwrites CSS transforms).
 - Example data stays labeled "예시" until replaced with real records.
+- One `<audio>` for the whole site, created in `PlayerProvider`; the AudioContext starts only from a user gesture. Links
+  between pages go through `PageLink` (client navigation) so playback survives `/` ↔ `/movie`.
+- Uploaded audio is checked by its bytes (`sniffAudio`), never by name or browser MIME; uploads are owner only, 30MB max.
 - The TMDB key stays on the server; movie writes and `/api/tmdb` are owner only. Poster paths must match TMDB's `/x.jpg` form.
 
 ## Status (2026-10-26)
@@ -58,7 +63,6 @@ guestbook, visitor tracking, owner edit mode + dashboard, demo-mode preview expo
 2. Storage for deployment: swap `lib/store.ts` to Supabase/Postgres before hosting on Vercel.
 3. Playable rooms: tetris 2-minute mode with leaderboard (`score` events), poker tutorial → AI → realtime tables,
    variant chess with stages.
-4. Music mini player that persists across the page.
 5. Runway video (needs a paid Runway plan): generate the fly-through from the room image, extract frames with ffmpeg,
    update FRAME_COUNT / MARKS / rects (README has the steps).
 6. Mobile polish of the tour framing; Lighthouse/accessibility pass; deploy.

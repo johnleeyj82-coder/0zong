@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { PlayerProvider } from "./components/music/PlayerContext";
+import MiniPlayer from "./components/music/MiniPlayer";
+import ListenMode from "./components/music/ListenMode";
 
 export const metadata: Metadata = {
   title: "0zong의 방",
@@ -19,7 +22,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=Nanum+Myeongjo:wght@700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* The player lives here, above every page, so music keeps going between / and /movie. */}
+        <PlayerProvider>
+          {children}
+          <MiniPlayer />
+          <ListenMode />
+        </PlayerProvider>
+      </body>
     </html>
   );
 }

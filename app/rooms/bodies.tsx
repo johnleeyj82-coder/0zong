@@ -4,9 +4,11 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import type { RoomKey } from "../data";
-import { getMovies, pageHref } from "@/lib/client";
+import { getMovies } from "@/lib/client";
 import { sortMovies, stars, summarize, type Movie as MovieRecord } from "@/lib/movies";
 import { ScoreBar } from "../components/movie/ScoreBar";
+import MusicRoom from "../components/music/MusicRoom";
+import { PageLink } from "../components/PageLink";
 
 const heat = Array.from({ length: 26 * 7 }, (_, i) => {
   const v = Math.abs((Math.sin(i * 12.9898) * 43758.5453) % 1);
@@ -84,18 +86,7 @@ function Movie() {
           </li>
         ))}
       </ol>
-      <a href={pageHref("movie")} className="btn-ghost mini-more">전체 점수 보기 <ArrowUpRight size={14} aria-hidden /></a>
-    </>
-  );
-}
-function Music() {
-  return (
-    <>
-      <div className="now"><span className="disc" aria-hidden /><div><b>새벽 3시 로파이</b><span className="hint">직접 올린 파일 · 2:14 / 5:48</span><span className="bar"><i /></span></div></div>
-      <ul className="thread">
-        <li><span className="meta">효과음</span>오래된 CRT 켜지는 소리</li>
-        <li><span className="meta">밈</span>요즘 단톡방에서 계속 쓰는 그 소리</li>
-      </ul>
+      <PageLink to="movie" className="btn-ghost mini-more">전체 점수 보기 <ArrowUpRight size={14} aria-hidden /></PageLink>
     </>
   );
 }
@@ -135,7 +126,7 @@ export function RoomBody({ k }: { k: RoomKey }) {
     case "poker": return <Poker />;
     case "book": return <Book />;
     case "movie": return <Movie />;
-    case "music": return <Music />;
+    case "music": return <MusicRoom />;
     case "whisky": return <Bar />;
     case "chess": return <Chess />;
     case "tetris": return <Tetris />;

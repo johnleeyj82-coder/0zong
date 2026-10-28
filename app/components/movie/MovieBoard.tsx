@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowDown, ArrowLeft, ArrowUp, FileInput, Pencil, Plus, Trash2 } from "lucide-react";
-import { checkOwner, deleteMovie, getMovies, pageHref } from "@/lib/client";
+import { checkOwner, deleteMovie, getMovies } from "@/lib/client";
+import { PageLink } from "../PageLink";
 import { CRITERIA, sortMovies, stars, summarize, total, type Movie, type SortDir, type SortKey } from "@/lib/movies";
 import { Poster } from "./Poster";
 import { ScoreBar, Swatch } from "./ScoreBar";
@@ -52,7 +53,7 @@ export default function MovieBoard() {
 
   return (
     <main className="film">
-      <a href={pageHref("home")} className="film-back"><ArrowLeft size={15} aria-hidden /> 방으로 돌아가기</a>
+      <PageLink to="home" className="film-back"><ArrowLeft size={15} aria-hidden /> 방으로 돌아가기</PageLink>
 
       <header className="film-head">
         <span className="label">Film log</span>
