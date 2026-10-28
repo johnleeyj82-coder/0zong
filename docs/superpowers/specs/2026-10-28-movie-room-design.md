@@ -53,3 +53,42 @@
 
 `npx tsc --noEmit`, `npm run build`, `curl /api/movies`, Playwright로 데스크톱·모바일 스크린샷 (서랍, `/movie`, 정렬 변경,
 펼침), `npm run export-preview` 빌드 성공.
+
+---
+
+# 2단계: 주인 편집, TMDB 검색, 0zong-cinema 가져오기
+
+2026-10-28 · 승인: 소유자 (채팅, "그대로 진행하고 가져오기 칸도 넣어줘")
+
+## 서버
+
+- `lib/tmdb.ts` (server-only): `searchTmdb(q)` 최대 8개, `tmdbMovie(id)` (감독은 credits에서, 장르·상영 시간·포스터).
+  키는 `TMDB_API_KEY` (v3 키는 `api_key`, `eyJ`로 시작하는 v4 토큰은 Bearer). `TMDB_API_BASE`는 테스트용 주소 바꾸기.
+  언어 `ko-KR`, 8초 제한. 키 없음 / 키 틀림 / 연결 실패를 구분한 한국어 메시지.
+- `GET /api/tmdb?q=` · `GET /api/tmdb?id=`: 주인만. 키가 없으면 503 + 안내.
+- `POST /api/movies` (새로 만들기, id는 서버가 생성) · `PUT` (있는 것만) · `DELETE ?id=`: 주인만.
+- `POST /api/movies/import`: 주인만, 최대 500편, 칸마다 검사해서 틀린 것은 건너뛰고 개수를 돌려줌. 같은 id는 덮어씀
+  (다시 가져와도 중복되지 않음).
+- `parseMovie()` (`lib/validate.ts`): 제목 1~100자, 원제 ≤100, 연도 1888~2100 정수, 감독 ≤60, 장르 ≤6개 각 ≤20자,
+  상영 시간 1~999, 포스터는 `^/[A-Za-z0-9_-]+\.(jpg|jpeg|png)$`만, tmdbId 양의 정수, 본 날 실제 날짜 `YYYY-MM-DD`,
+  점수는 0~만점, 소수 첫째 자리로 반올림.
+- 저장소: `saveMovie`, `updateMovie`, `removeMovie`, `importMovies`. 실제 기록이 하나라도 있으면 예시는 보이지 않음.
+
+## 가져오기
+
+0zong-cinema의 `localStorage['0zong-films']` 배열을 붙여넣는다. `fromCinema()` (`lib/movies.ts`)가 변환:
+id → `cin-<원래 id>`, 문자열 점수 → 숫자, `watchedDate`(없으면 `savedAt` 날짜) → `watchedAt`.
+평론(memo, watchedPlace, overview)과 TMDB 평점은 가져오지 않는다. 미리보기(편수, 건너뛸 편수, 앞 5편 제목) 후 저장.
+
+## 화면 (`/movie`, 주인일 때만)
+
+- 정렬 줄에 "영화 추가", "가져오기". 예시가 보이는 동안 "첫 영화를 저장하면 예시 8편은 사라져요" 안내.
+- 펼친 줄(예시 제외)에 "수정", "삭제"(두 번 눌러야 삭제).
+- 편집 시트: 방 서랍과 같은 오른쪽 시트(768px 미만은 아래에서). TMDB 검색(350ms 멈추면 검색, 이전 요청 취소) →
+  고르면 칸 채움. 직접 입력칸, 날짜, 6개 슬라이더(0~만점, 1점 단위)와 실시간 해부도 막대·총점·별점. Esc로 닫기.
+- 데모 모드: 편집·가져오기는 그 브라우저 localStorage에, TMDB 검색은 꺼짐(안내).
+
+## 검증
+
+TMDB 흉내 로컬 서버 + `TMDB_API_BASE`로 검색 → 선택 → 저장을 Playwright로. 주인 아님 403, 잘못된 값 400을 curl로.
+가져오기는 0zong-cinema 형식 샘플로. `tsc`, `build`, 데스크톱·모바일 스크린샷, `export-preview` 빌드.
