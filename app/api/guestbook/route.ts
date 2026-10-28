@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { addMessage, listMessages, setMessageHidden } from "@/lib/store";
-import { isOwner } from "@/lib/auth";
+import { isOwner, isOwnerName } from "@/lib/auth";
 import { clean, isId } from "@/lib/validate";
 
 export async function GET() {
@@ -16,6 +16,7 @@ export async function POST(req: Request) {
   const name = clean(body.name, 20) || "익명";
   if (!isId(body.visitorId)) return NextResponse.json({ error: "방문자 정보를 확인하지 못했어요." }, { status: 400 });
   if (!text) return NextResponse.json({ error: "남길 말을 적어주세요." }, { status: 400 });
+  if (isOwnerName(name) && !(await isOwner())) return NextResponse.json({ error: "그 이름은 방 주인만 쓸 수 있어요." }, { status: 403 });
   const m = await addMessage({ id: randomUUID(), visitorId: body.visitorId, name, text, at: Date.now() });
   return NextResponse.json({ message: m });
 }

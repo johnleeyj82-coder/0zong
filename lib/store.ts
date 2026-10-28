@@ -11,11 +11,15 @@ const MAX_EVENTS_PER_VISITOR = 2000;
 let queue: Promise<unknown> = Promise.resolve();
 
 async function read(): Promise<DB> {
+  let raw: string;
   try {
-    return JSON.parse(await fs.readFile(FILE, "utf8")) as DB;
-  } catch {
-    return { visitors: {}, messages: [], rooms: {} };
+    raw = await fs.readFile(FILE, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return { visitors: {}, messages: [], rooms: {} };
+    throw e;
   }
+  // A corrupt file throws here instead of reading as empty, so the next write can't wipe the records.
+  return JSON.parse(raw) as DB;
 }
 async function write(db: DB) {
   await fs.mkdir(path.dirname(FILE), { recursive: true });

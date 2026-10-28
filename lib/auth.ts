@@ -17,6 +17,8 @@ export function verifyPassword(password: string) {
   const stored = process.env.OWNER_PASSWORD_HASH || "";
   const [algo, salt, hash] = stored.split(":");
   if (algo !== "scrypt" || !salt || !hash) return false;
+  // A malformed hash decodes short or empty, and two empty buffers compare equal: refuse anything but 32 bytes.
+  if (!/^[0-9a-f]{64}$/i.test(hash)) return false;
   const expected = Buffer.from(hash, "hex");
   const actual = scryptSync(password, Buffer.from(salt, "hex"), expected.length);
   return timingSafeEqual(actual, expected);
