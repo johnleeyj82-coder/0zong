@@ -1,3 +1,5 @@
+import type { Movie } from "./movies";
+
 export type VisitMode = "named" | "anonymous";
 export type EventType = "enter" | "view" | "dock" | "open" | "guestbook" | "score";
 
@@ -20,6 +22,8 @@ export type DB = {
   visitors: Record<string, Visitor>;
   messages: Message[];
   rooms: Record<string, RoomOverride>;
+  /** The owner's movie records. Missing in older files; empty or missing means the example records are shown. */
+  movies?: Movie[];
 };
 
 export type Dashboard = { visitors: Visitor[]; interest: Record<string, number>; messages: Message[] };

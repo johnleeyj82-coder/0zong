@@ -27,7 +27,9 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `app/components/RoomContext.tsx` | visitor identity/mode, event queue + flush, room overrides, drawer/dashboard state |
 | `app/components/Opening.tsx` | lights-on intro + guestbook gate + owner password reveal |
 | `app/components/IconBar.tsx` | fixed dock with tour progress |
-| `app/rooms/bodies.tsx` | per-room drawer content (all example data for now) |
+| `app/rooms/bodies.tsx` | per-room drawer content (all example data for now; movie reads `getMovies()`) |
+| `lib/movies.ts` | movie scoring (6 criteria = 100, stars = total/20), sort, summary; examples in `lib/movies.example.ts` |
+| `app/movie/` + `app/components/movie/` | `/movie` score anatomy page (own route, not loaded by the room page) |
 | `app/api/*` | visit, auth, events, guestbook, rooms, admin |
 | `lib/store.ts` | the only storage layer (JSON file `data/db.json`) |
 | `lib/auth.ts` | owner check (scrypt), signed HTTP-only cookie |

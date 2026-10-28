@@ -2,6 +2,8 @@
 // Browser-side API. With NEXT_PUBLIC_DEMO=1 (the hosted static preview) there is no server, so everything is kept in
 // this browser's localStorage instead, and owner mode uses the demo password "demo". Never enable demo mode in production.
 import type { Dashboard, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
+import type { Movie } from "./movies";
+import { EXAMPLE_MOVIES } from "./movies.example";
 
 export const DEMO = process.env.NEXT_PUBLIC_DEMO === "1";
 const DEMO_OWNER = "0zong";
@@ -127,6 +129,12 @@ export async function saveRoom(key: string, o: RoomOverride): Promise<Result<{ r
   if (!DEMO) return call("/api/rooms", { method: "PUT", body: JSON.stringify({ key, ...o }) });
   const db = demoRead(); db.rooms[key] = { ...db.rooms[key], ...o }; demoWrite(db);
   return { ok: true, data: { room: db.rooms[key] } };
+}
+
+export async function getMovies(): Promise<Result<Movie[]>> {
+  if (DEMO) return { ok: true, data: EXAMPLE_MOVIES };
+  const r = await call<{ movies: Movie[] }>("/api/movies");
+  return r.ok ? { ok: true, data: r.data.movies } : r;
 }
 
 export async function getDashboard(): Promise<Result<Dashboard>> {

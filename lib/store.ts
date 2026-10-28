@@ -5,6 +5,8 @@ import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { DB, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
+import type { Movie } from "./movies";
+import { EXAMPLE_MOVIES } from "./movies.example";
 
 const FILE = process.env.ROOM_DB_FILE || path.join(process.cwd(), "data", "db.json");
 const MAX_EVENTS_PER_VISITOR = 2000;
@@ -84,6 +86,12 @@ export async function getRoomOverrides(): Promise<Record<string, RoomOverride>> 
 
 export function setRoomOverride(key: string, o: RoomOverride): Promise<RoomOverride> {
   return mutate((db) => { db.rooms[key] = { ...db.rooms[key], ...o }; return db.rooms[key]; });
+}
+
+/** The owner's movie records, or the labeled example records until there are any. */
+export async function listMovies(): Promise<Movie[]> {
+  const movies = (await read()).movies;
+  return movies?.length ? movies : EXAMPLE_MOVIES;
 }
 
 export async function getDashboard() {

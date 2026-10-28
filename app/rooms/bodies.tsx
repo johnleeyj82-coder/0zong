@@ -1,5 +1,13 @@
+"use client";
 // Drawer bodies, one per room. All records here are examples until the owner replaces them.
+// The movie body reads its records through lib/client (examples, labeled 예시, until the owner adds real ones).
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import type { RoomKey } from "../data";
+import { getMovies } from "@/lib/client";
+import { sortMovies, stars, summarize, type Movie as MovieRecord } from "@/lib/movies";
+import { ScoreBar } from "../components/movie/ScoreBar";
 
 const heat = Array.from({ length: 26 * 7 }, (_, i) => {
   const v = Math.abs((Math.sin(i * 12.9898) * 43758.5453) % 1);
@@ -58,14 +66,26 @@ function Book() {
   );
 }
 function Movie() {
+  const [movies, setMovies] = useState<MovieRecord[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => { void getMovies().then((r) => (r.ok ? setMovies(r.data) : setError(r.error))); }, []);
+  if (error) return <p className="form-error" role="alert">{error}</p>;
+  if (!movies) return <p className="hint">불러오는 중…</p>;
+  if (!movies.length) return <p className="hint">아직 점수를 매긴 영화가 없어요. 첫 영화를 기록하면 여기에 보여요.</p>;
+  const sum = summarize(movies);
   return (
     <>
-      <table className="dt"><thead><tr><th>영화</th><th>본 날</th><th>내 점수</th></tr></thead><tbody>
-        <tr><td>퍼펙트 데이즈</td><td>10.25</td><td>4.5</td></tr>
-        <tr><td>애프터썬</td><td>10.18</td><td>5.0</td></tr>
-        <tr><td>듄: 파트 2</td><td>10.02</td><td>4.0</td></tr>
-      </tbody></table>
-      <p className="hint">보고 싶은 목록 12편 · 내 기준 0~5점</p>
+      <p className="mini-sum"><b>{sum.count}편</b>을 봤고, 평균 별점은 <b>{sum.avgStars.toFixed(1)}</b>이에요.</p>
+      <ol className="mini-films">
+        {sortMovies(movies, "total").slice(0, 5).map((m) => (
+          <li key={m.id}>
+            <span className="t"><span className="tt">{m.title}</span>{m.example && <em className="ex-tag">예시</em>}</span>
+            <ScoreBar movie={m} compact />
+            <span className="n">{stars(m).toFixed(1)}</span>
+          </li>
+        ))}
+      </ol>
+      <Link href="/movie" className="btn-ghost mini-more">전체 점수 보기 <ArrowUpRight size={14} aria-hidden /></Link>
     </>
   );
 }
