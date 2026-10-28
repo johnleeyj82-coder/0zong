@@ -11,7 +11,7 @@ const DEMO_OWNER = "0zong";
 const DEMO_PASSWORD = "demo";
 
 /** Links between pages. The static preview may live under any folder, so it uses relative paths (subpages get <base href="../">). */
-export const pageHref = (to: "home" | "movie") => (DEMO ? (to === "home" ? "./" : "./movie/") : to === "home" ? "/" : "/movie");
+export const pageHref = (to: "home" | "movie") => (DEMO ? (to === "home" ? "./index.html" : "./movie/index.html") : to === "home" ? "/" : "/movie");
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
