@@ -2,10 +2,9 @@
 // Drawer bodies, one per room. All records here are examples until the owner replaces them.
 // The movie body reads its records through lib/client (examples, labeled 예시, until the owner adds real ones).
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import type { RoomKey } from "../data";
-import { getMovies } from "@/lib/client";
+import { getMovies, pageHref } from "@/lib/client";
 import { sortMovies, stars, summarize, type Movie as MovieRecord } from "@/lib/movies";
 import { ScoreBar } from "../components/movie/ScoreBar";
 
@@ -85,7 +84,7 @@ function Movie() {
           </li>
         ))}
       </ol>
-      <Link href="/movie" className="btn-ghost mini-more">전체 점수 보기 <ArrowUpRight size={14} aria-hidden /></Link>
+      <a href={pageHref("movie")} className="btn-ghost mini-more">전체 점수 보기 <ArrowUpRight size={14} aria-hidden /></a>
     </>
   );
 }

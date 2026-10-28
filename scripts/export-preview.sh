@@ -15,4 +15,6 @@ grep -rl "_next/static" out --include=*.html --include=*.js --include=*.css --in
 sed -i 's#r.p="./_next/"#r.p="./assets/"#' out/assets/static/chunks/webpack-*.js
 # Escape literal U+FFFD characters inside bundled strings (some uploaders reject them); the code is unchanged.
 node -e 'const fs=require("fs"),p=require("path");const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>e.isDirectory()?walk(p.join(d,e.name)):[p.join(d,e.name)]);for(const f of walk("out/assets").filter(f=>f.endsWith(".js"))){const s=fs.readFileSync(f,"utf8");if(s.includes("\uFFFD"))fs.writeFileSync(f,s.split("\uFFFD").join("\\uFFFD"))}'
+# Pages one folder down (movie/, admin/) resolve "./assets" against their own folder: point them back at the root.
+for f in out/*/index.html; do sed -i 's#<head>#<head><base href="../">#' "$f"; done
 echo "Preview built in ./out"

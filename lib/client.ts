@@ -2,12 +2,16 @@
 // Browser-side API. With NEXT_PUBLIC_DEMO=1 (the hosted static preview) there is no server, so everything is kept in
 // this browser's localStorage instead, and owner mode uses the demo password "demo". Never enable demo mode in production.
 import type { Dashboard, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
-import type { Movie } from "./movies";
+import type { Movie, MovieInput } from "./movies";
+import type { TmdbHit, TmdbMovie } from "./tmdb.types";
 import { EXAMPLE_MOVIES } from "./movies.example";
 
 export const DEMO = process.env.NEXT_PUBLIC_DEMO === "1";
 const DEMO_OWNER = "0zong";
 const DEMO_PASSWORD = "demo";
+
+/** Links between pages. The static preview may live under any folder, so it uses relative paths (subpages get <base href="../">). */
+export const pageHref = (to: "home" | "movie") => (DEMO ? (to === "home" ? "./" : "./movie/") : to === "home" ? "/" : "/movie");
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -23,7 +27,7 @@ async function call<T>(url: string, init?: RequestInit): Promise<Result<T>> {
 }
 
 /* ---------- demo store (localStorage) ---------- */
-type DemoDB = { visitors: Record<string, Visitor>; messages: Message[]; rooms: Record<string, RoomOverride>; owner: boolean };
+type DemoDB = { visitors: Record<string, Visitor>; messages: Message[]; rooms: Record<string, RoomOverride>; owner: boolean; movies?: Movie[] };
 const KEY = "room.demo.db";
 function demoRead(): DemoDB {
   try {
@@ -132,9 +136,62 @@ export async function saveRoom(key: string, o: RoomOverride): Promise<Result<{ r
 }
 
 export async function getMovies(): Promise<Result<Movie[]>> {
-  if (DEMO) return { ok: true, data: EXAMPLE_MOVIES };
+  if (DEMO) { const m = demoRead().movies; return { ok: true, data: m?.length ? m : EXAMPLE_MOVIES }; }
   const r = await call<{ movies: Movie[] }>("/api/movies");
   return r.ok ? { ok: true, data: r.data.movies } : r;
+}
+
+/** Owner only. Creates when `id` is missing, otherwise replaces. */
+export async function saveMovie(m: MovieInput): Promise<Result<Movie>> {
+  if (!DEMO) {
+    const r = await call<{ movie: Movie }>("/api/movies", { method: m.id ? "PUT" : "POST", body: JSON.stringify(m) });
+    return r.ok ? { ok: true, data: r.data.movie } : r;
+  }
+  const db = demoRead();
+  if (!db.owner) return { ok: false, error: "권한이 없어요." };
+  const movie: Movie = { ...m, id: m.id || crypto.randomUUID() };
+  const list = db.movies ?? [];
+  const i = list.findIndex((x) => x.id === movie.id);
+  if (i >= 0) list[i] = movie; else list.push(movie);
+  db.movies = list; demoWrite(db);
+  return { ok: true, data: movie };
+}
+
+export async function deleteMovie(id: string): Promise<Result<unknown>> {
+  if (!DEMO) return call(`/api/movies?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  const db = demoRead();
+  if (!db.owner) return { ok: false, error: "권한이 없어요." };
+  db.movies = (db.movies ?? []).filter((x) => x.id !== id); demoWrite(db);
+  return { ok: true, data: {} };
+}
+
+export async function importMovies(movies: MovieInput[]): Promise<Result<{ added: number; updated: number; skipped: number }>> {
+  if (!DEMO) return call("/api/movies/import", { method: "POST", body: JSON.stringify({ movies }) });
+  const db = demoRead();
+  if (!db.owner) return { ok: false, error: "권한이 없어요." };
+  const list = db.movies ?? [];
+  let added = 0, updated = 0;
+  for (const m of movies) {
+    const movie = { ...m, id: m.id || crypto.randomUUID() };
+    const i = list.findIndex((x) => x.id === movie.id);
+    if (i >= 0) { list[i] = movie; updated++; } else { list.push(movie); added++; }
+  }
+  db.movies = list; demoWrite(db);
+  return { ok: true, data: { added, updated, skipped: 0 } };
+}
+
+const NO_TMDB_DEMO = "미리보기에는 서버가 없어서 TMDB 검색을 쓸 수 없어요. 직접 입력해주세요.";
+
+export async function searchTmdb(q: string, signal?: AbortSignal): Promise<Result<TmdbHit[]>> {
+  if (DEMO) return { ok: false, error: NO_TMDB_DEMO };
+  const r = await call<{ results: TmdbHit[] }>(`/api/tmdb?q=${encodeURIComponent(q)}`, { signal });
+  return r.ok ? { ok: true, data: r.data.results } : r;
+}
+
+export async function tmdbDetails(id: number): Promise<Result<TmdbMovie>> {
+  if (DEMO) return { ok: false, error: NO_TMDB_DEMO };
+  const r = await call<{ movie: TmdbMovie }>(`/api/tmdb?id=${id}`);
+  return r.ok ? { ok: true, data: r.data.movie } : r;
 }
 
 export async function getDashboard(): Promise<Result<Dashboard>> {

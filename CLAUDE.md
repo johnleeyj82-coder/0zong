@@ -29,8 +29,9 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `app/components/IconBar.tsx` | fixed dock with tour progress |
 | `app/rooms/bodies.tsx` | per-room drawer content (all example data for now; movie reads `getMovies()`) |
 | `lib/movies.ts` | movie scoring (6 criteria = 100, stars = total/20), sort, summary; examples in `lib/movies.example.ts` |
-| `app/movie/` + `app/components/movie/` | `/movie` score anatomy page (own route, not loaded by the room page) |
-| `app/api/*` | visit, auth, events, guestbook, rooms, admin |
+| `app/movie/` + `app/components/movie/` | `/movie` score anatomy page (own route); owner add/edit/delete, TMDB search, 0zong-cinema import |
+| `lib/tmdb.ts` | server-only TMDB client (`TMDB_API_KEY` in `.env.local`); only `/api/tmdb` (owner only) calls it |
+| `app/api/*` | visit, auth, events, guestbook, rooms, admin, movies (+ import), tmdb |
 | `lib/store.ts` | the only storage layer (JSON file `data/db.json`) |
 | `lib/auth.ts` | owner check (scrypt), signed HTTP-only cookie |
 | `lib/client.ts` | browser API; `NEXT_PUBLIC_DEMO=1` switches to localStorage |
@@ -44,6 +45,7 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 - Password hash format `scrypt:<salt>:<hash>` — no `$` (dotenv expands it). Secrets only in `.env.local`.
 - Framer-motion elements that need centering use `style={{ x: "-50%" }}` (framer overwrites CSS transforms).
 - Example data stays labeled "예시" until replaced with real records.
+- The TMDB key stays on the server; movie writes and `/api/tmdb` are owner only. Poster paths must match TMDB's `/x.jpg` form.
 
 ## Status (2026-10-26)
 

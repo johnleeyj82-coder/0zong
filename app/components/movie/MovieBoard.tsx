@@ -1,12 +1,14 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowDown, ArrowLeft, ArrowUp } from "lucide-react";
-import { getMovies } from "@/lib/client";
+import { ArrowDown, ArrowLeft, ArrowUp, FileInput, Pencil, Plus, Trash2 } from "lucide-react";
+import { checkOwner, deleteMovie, getMovies, pageHref } from "@/lib/client";
 import { CRITERIA, sortMovies, stars, summarize, total, type Movie, type SortDir, type SortKey } from "@/lib/movies";
 import { Poster } from "./Poster";
 import { ScoreBar, Swatch } from "./ScoreBar";
+import { Sheet } from "./Sheet";
+import { MovieEditor } from "./MovieEditor";
+import { ImportPanel } from "./ImportPanel";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const SORTS: { key: SortKey; label: string }[] = [
@@ -24,10 +26,24 @@ export default function MovieBoard() {
   const [error, setError] = useState<string | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({ key: "total", dir: "desc" });
   const [open, setOpen] = useState<string | null>(null);
+  const [owner, setOwner] = useState(false);
+  /** Owner tools: the editor (null = new film) or the import panel. */
+  const [tool, setTool] = useState<{ kind: "edit"; movie?: Movie } | { kind: "import" } | null>(null);
+  const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  useEffect(() => {
-    void getMovies().then((r) => (r.ok ? setMovies(r.data) : setError(r.error)));
-  }, []);
+  const load = useCallback(() => getMovies().then((r) => (r.ok ? (setMovies(r.data), setError(null)) : setError(r.error))), []);
+  useEffect(() => { void load(); void checkOwner().then(setOwner); }, [load]);
+  const closeTool = useCallback(() => setTool(null), []);
+  const showingExamples = !!movies?.length && movies.every((m) => m.example);
+
+  const remove = async (m: Movie) => {
+    if (confirmDel !== m.id) { setConfirmDel(m.id); return; }
+    const r = await deleteMovie(m.id);
+    setConfirmDel(null);
+    if (!r.ok) { setNotice(r.error); return; }
+    setOpen(null); setNotice(`「${m.title}」 기록을 지웠어요.`); void load();
+  };
 
   const sorted = useMemo(() => (movies ? sortMovies(movies, sort.key, sort.dir) : []), [movies, sort]);
   const sum = useMemo(() => summarize(movies ?? []), [movies]);
@@ -36,7 +52,7 @@ export default function MovieBoard() {
 
   return (
     <main className="film">
-      <Link href="/" className="film-back"><ArrowLeft size={15} aria-hidden /> 방으로 돌아가기</Link>
+      <a href={pageHref("home")} className="film-back"><ArrowLeft size={15} aria-hidden /> 방으로 돌아가기</a>
 
       <header className="film-head">
         <span className="label">Film log</span>
@@ -68,6 +84,16 @@ export default function MovieBoard() {
           })}
         </div>
       </div>
+
+      {owner && (
+        <div className="film-owner">
+          <p className="hint" role="status">{notice ?? (showingExamples ? "지금 보이는 영화는 예시예요. 첫 영화를 기록하면 예시는 사라져요." : "편집 모드예요. 줄을 펼치면 고치거나 지울 수 있어요.")}</p>
+          <div className="gate-actions">
+            <button className="btn" onClick={() => { setNotice(null); setTool({ kind: "edit" }); }}><Plus size={15} aria-hidden /> 영화 기록하기</button>
+            <button className="btn-ghost" onClick={() => { setNotice(null); setTool({ kind: "import" }); }}><FileInput size={14} aria-hidden /> 0zong-cinema에서 가져오기</button>
+          </div>
+        </div>
+      )}
 
       {error && <p className="form-error" role="alert">{error}</p>}
       {!movies && !error && (
@@ -121,6 +147,14 @@ export default function MovieBoard() {
                           <span>{m.genres.join(", ")}{m.runtime ? `, ${m.runtime}분` : ""}</span>
                           <span>본 날 {watched(m.watchedAt)}</span>
                         </p>
+                        {owner && !m.example && (
+                          <div className="film-actions">
+                            <button className="btn-ghost" onClick={() => setTool({ kind: "edit", movie: m })}><Pencil size={13} aria-hidden /> 고치기</button>
+                            <button className="btn-ghost danger" onClick={() => remove(m)} onBlur={() => setConfirmDel(null)}>
+                              <Trash2 size={13} aria-hidden /> {confirmDel === m.id ? "한 번 더 누르면 지워져요" : "지우기"}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   )}
@@ -130,6 +164,16 @@ export default function MovieBoard() {
           })}
         </ol>
       )}
+      <Sheet open={tool?.kind === "edit"} label={tool?.kind === "edit" && tool.movie ? "Edit film" : "New film"}
+        title={tool?.kind === "edit" && tool.movie ? "점수 고치기" : "영화 기록하기"} onClose={closeTool}>
+        {tool?.kind === "edit" && (
+          <MovieEditor key={tool.movie?.id ?? "new"} movie={tool.movie} onCancel={closeTool}
+            onSaved={() => { setTool(null); setNotice(tool.movie ? "고친 점수를 저장했어요." : "새 영화를 기록했어요."); void load(); }} />
+        )}
+      </Sheet>
+      <Sheet open={tool?.kind === "import"} label="Import" title="0zong-cinema에서 가져오기" onClose={closeTool}>
+        <ImportPanel onCancel={closeTool} onDone={(msg) => { setTool(null); setNotice(msg); void load(); }} />
+      </Sheet>
     </main>
   );
 }

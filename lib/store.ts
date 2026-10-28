@@ -94,6 +94,49 @@ export async function listMovies(): Promise<Movie[]> {
   return movies?.length ? movies : EXAMPLE_MOVIES;
 }
 
+/** Creates or replaces a movie by id. The first real record hides the examples. */
+export function saveMovie(m: Movie): Promise<Movie> {
+  return mutate((db) => {
+    const list = db.movies ?? [];
+    const i = list.findIndex((x) => x.id === m.id);
+    if (i >= 0) list[i] = m; else list.push(m);
+    db.movies = list;
+    return m;
+  });
+}
+
+/** Replaces an existing movie; null if there is no movie with that id. */
+export function updateMovie(m: Movie): Promise<Movie | null> {
+  return mutate((db) => {
+    const i = (db.movies ?? []).findIndex((x) => x.id === m.id);
+    if (i < 0) return null;
+    db.movies![i] = m;
+    return m;
+  });
+}
+
+export function removeMovie(id: string): Promise<boolean> {
+  return mutate((db) => {
+    const before = db.movies?.length ?? 0;
+    db.movies = (db.movies ?? []).filter((x) => x.id !== id);
+    return db.movies.length < before;
+  });
+}
+
+/** Adds or overwrites by id, so importing the same export twice does not duplicate anything. */
+export function importMovies(list: Movie[]): Promise<{ added: number; updated: number }> {
+  return mutate((db) => {
+    const movies = db.movies ?? [];
+    let added = 0, updated = 0;
+    for (const m of list) {
+      const i = movies.findIndex((x) => x.id === m.id);
+      if (i >= 0) { movies[i] = m; updated++; } else { movies.push(m); added++; }
+    }
+    db.movies = movies;
+    return { added, updated };
+  });
+}
+
 export async function getDashboard() {
   const db = await read();
   const interest: Record<string, number> = {};
