@@ -20,6 +20,12 @@ if (!existsSync(path.join(APOCHILL, "vite.config.js"))) {
 }
 if (!existsSync(path.join(APOCHILL, "node_modules", "vite"))) fail(`apochill-kit에서 먼저 'npm ci'를 실행해주세요 (${APOCHILL}).`);
 const major = Number(process.versions.node.split(".")[0]);
+if (major < 20) {
+  fail(`Node.js ${process.versions.node}로는 apochill-kit(Vite 8)을 띄울 수 없어요. Node.js 24로 올려주세요:\n`
+    + "  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash\n"
+    + "  (터미널을 새로 연 뒤) nvm install 24 && nvm use 24\n"
+    + "  그다음 apochill-kit에서 다시 npm ci");
+}
 if (major < 24) console.warn(`[0zong × apochill] apochill-kit은 Node.js 24 이상을 요구해요 (지금 ${process.versions.node}). 문제가 생기면 Node를 올려주세요.`);
 
 // apochill's own predev step: copy the Draco decoder into its public folder.
