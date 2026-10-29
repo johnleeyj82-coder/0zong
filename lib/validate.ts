@@ -1,3 +1,4 @@
+import { MAX_SHOTS_PER_NOTE, STATUSES, type Note, type Slot, type Status } from "./games";
 import { CRITERIA, type Movie, type Scores } from "./movies";
 
 export const clean = (s: unknown, max: number) =>
@@ -48,6 +49,44 @@ export function parseMovie(b: Record<string, unknown>): { ok: true; movie: Omit<
       ...(Number.isInteger(tmdbId) && tmdbId > 0 && { tmdbId }),
       watchedAt: b.watchedAt,
       scores,
+    },
+  };
+}
+
+/* ---------- games ---------- */
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** The owner-editable part of a slot. kind/appid/id/addedAt are set by the route. */
+export function parseSlotFields(b: Record<string, unknown>): { ok: true; fields: Pick<Slot, "title" | "status" | "progress" | "progressLabel" | "lastSpot" | "manualMinutes"> } | { ok: false; error: string } {
+  const title = clean(b.title, 80);
+  if (!title) return { ok: false, error: "게임 이름을 적어주세요." };
+  const status = (typeof b.status === "string" && b.status in STATUSES ? b.status : "playing") as Status;
+  const progress = int(b.progress);
+  const minutes = int(b.manualMinutes);
+  return {
+    ok: true,
+    fields: {
+      title, status, progressLabel: clean(b.progressLabel, 30), lastSpot: clean(b.lastSpot, 60),
+      ...(Number.isInteger(progress) && progress >= 0 && progress <= 100 && { progress }),
+      ...(Number.isFinite(minutes) && minutes >= 0 && minutes <= 10_000_000 && { manualMinutes: Math.round(minutes) }),
+    },
+  };
+}
+
+export function parseNote(b: Record<string, unknown>): { ok: true; note: Omit<Note, "id"> } | { ok: false; error: string } {
+  if (typeof b.slotId !== "string" || !b.slotId) return { ok: false, error: "어느 게임의 메모인지 골라주세요." };
+  if (!realDate(b.date)) return { ok: false, error: "날짜를 확인해주세요." };
+  const text = typeof b.text === "string" ? b.text.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, "").trim().slice(0, 500) : "";
+  if (!text) return { ok: false, error: "메모를 적어주세요." };
+  const hours = int(b.hours);
+  const shots = Array.isArray(b.shots) ? b.shots.filter((s): s is string => typeof s === "string" && UUID.test(s)) : [];
+  if (shots.length > MAX_SHOTS_PER_NOTE) return { ok: false, error: `스크린샷은 메모 하나에 ${MAX_SHOTS_PER_NOTE}장까지예요.` };
+  return {
+    ok: true,
+    note: {
+      slotId: b.slotId, date: b.date, text, shots: [...new Set(shots)],
+      ...(Number.isFinite(hours) && hours > 0 && hours <= 24 && { hours: Math.round(hours * 10) / 10 }),
     },
   };
 }

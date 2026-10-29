@@ -19,7 +19,31 @@ export function sniffAudio(b: Uint8Array): { ext: string; mime: string } | null 
   return null;
 }
 
+/** jpg, png, webp by their first bytes. */
+export function sniffImage(b: Uint8Array): { ext: string; mime: string } | null {
+  if (b.length < 12) return null;
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return { ext: "jpg", mime: "image/jpeg" };
+  if (b[0] === 0x89 && String.fromCharCode(...b.subarray(1, 4)) === "PNG") return { ext: "png", mime: "image/png" };
+  if (String.fromCharCode(...b.subarray(0, 4)) === "RIFF" && String.fromCharCode(...b.subarray(8, 12)) === "WEBP") return { ext: "webp", mime: "image/webp" };
+  return null;
+}
+
 const file = (id: string, ext: string) => path.join(DIR, `${id}.${ext}`);
+const SHOTS = path.join(path.dirname(DIR), "shots");
+const shotFile = (id: string, ext: string) => path.join(SHOTS, `${id}.${ext}`);
+
+export async function saveImage(id: string, ext: string, data: Uint8Array) {
+  await fs.mkdir(SHOTS, { recursive: true });
+  await fs.writeFile(shotFile(id, ext), data);
+}
+
+export async function removeImage(id: string, ext: string) {
+  await fs.rm(shotFile(id, ext), { force: true });
+}
+
+export async function readImage(id: string, ext: string) {
+  return fs.readFile(shotFile(id, ext)).catch(() => null);
+}
 
 export async function saveAudio(id: string, ext: string, data: Uint8Array) {
   await fs.mkdir(DIR, { recursive: true });

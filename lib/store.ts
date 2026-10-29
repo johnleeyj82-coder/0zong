@@ -7,6 +7,7 @@ import path from "node:path";
 import type { DB, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
 import type { Movie } from "./movies";
 import type { Track } from "./music";
+import type { Note, Shot, Slot, SteamSnapshot } from "./games";
 import { EXAMPLE_MOVIES } from "./movies.example";
 
 const FILE = process.env.ROOM_DB_FILE || path.join(process.cwd(), "data", "db.json");
@@ -173,6 +174,73 @@ export function removeTrack(id: string): Promise<Track | null> {
     if (t) db.tracks = db.tracks!.filter((x) => x.id !== id);
     return t;
   });
+}
+
+/* ---------- games ---------- */
+const gamesOf = (db: DB) => (db.games ??= { slots: [], notes: [], shots: [] });
+
+export async function getGames() {
+  const g = (await read()).games;
+  return { slots: g?.slots ?? [], notes: g?.notes ?? [], shots: g?.shots ?? [], steam: g?.steam ?? null };
+}
+
+export function setSteamSnapshot(s: SteamSnapshot): Promise<SteamSnapshot> {
+  return mutate((db) => { gamesOf(db).steam = s; return s; });
+}
+
+/** Creates or replaces a slot by id. */
+export function saveSlot(s: Slot): Promise<Slot> {
+  return mutate((db) => {
+    const g = gamesOf(db), i = g.slots.findIndex((x) => x.id === s.id);
+    if (i >= 0) g.slots[i] = s; else g.slots.push(s);
+    return s;
+  });
+}
+
+/** Removes a slot with its notes; returns the screenshots only those notes used, so their files can go too. */
+export function removeSlot(id: string): Promise<{ removed: boolean; orphans: Shot[] }> {
+  return mutate((db) => {
+    const g = gamesOf(db);
+    if (!g.slots.some((s) => s.id === id)) return { removed: false, orphans: [] };
+    const gone = g.notes.filter((n) => n.slotId === id).flatMap((n) => n.shots);
+    g.slots = g.slots.filter((s) => s.id !== id);
+    g.notes = g.notes.filter((n) => n.slotId !== id);
+    return { removed: true, orphans: release(g, gone) };
+  });
+}
+
+/** Creates or replaces a note; screenshots taken out of an edited note are returned for deletion. */
+export function saveNote(n: Note): Promise<{ note: Note; orphans: Shot[] }> {
+  return mutate((db) => {
+    const g = gamesOf(db), i = g.notes.findIndex((x) => x.id === n.id);
+    const before = i >= 0 ? g.notes[i].shots : [];
+    if (i >= 0) g.notes[i] = n; else g.notes.push(n);
+    return { note: n, orphans: release(g, before.filter((s) => !n.shots.includes(s))) };
+  });
+}
+
+export function removeNote(id: string): Promise<{ removed: boolean; orphans: Shot[] }> {
+  return mutate((db) => {
+    const g = gamesOf(db), note = g.notes.find((n) => n.id === id);
+    if (!note) return { removed: false, orphans: [] };
+    g.notes = g.notes.filter((n) => n.id !== id);
+    return { removed: true, orphans: release(g, note.shots) };
+  });
+}
+
+export function addShot(s: Shot): Promise<Shot> {
+  return mutate((db) => { gamesOf(db).shots.push(s); return s; });
+}
+
+/**
+ * Drops the given screenshot records unless another note still uses them, and returns what was dropped.
+ * (An upload never saved into a note stays on disk; it is small, and nothing links to it.)
+ */
+function release(g: { notes: Note[]; shots: Shot[] }, ids: string[]): Shot[] {
+  const used = new Set(g.notes.flatMap((n) => n.shots));
+  const gone = g.shots.filter((s) => ids.includes(s.id) && !used.has(s.id));
+  g.shots = g.shots.filter((s) => !gone.includes(s));
+  return gone;
 }
 
 export async function getDashboard() {

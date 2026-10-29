@@ -4,6 +4,7 @@
 import type { Dashboard, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
 import type { Movie, MovieInput } from "./movies";
 import type { Track } from "./music";
+import { buildView, EXAMPLE_NOTES, EXAMPLE_SLOTS, type GamesPayload, type Note, type Slot, type SteamGame } from "./games";
 import type { TmdbHit, TmdbMovie } from "./tmdb.types";
 import { EXAMPLE_MOVIES } from "./movies.example";
 
@@ -12,7 +13,7 @@ const DEMO_OWNER = "0zong";
 const DEMO_PASSWORD = "demo";
 
 /** Links between pages. The static preview may live under any folder, so it uses relative paths (subpages get <base href="../">). */
-export const pageHref = (to: "home" | "movie") => (DEMO ? (to === "home" ? "./index.html" : "./movie/index.html") : to === "home" ? "/" : "/movie");
+export const pageHref = (to: "home" | "movie" | "game") => (DEMO ? (to === "home" ? "./index.html" : `./${to}/index.html`) : to === "home" ? "/" : `/${to}`);
 
 type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -28,7 +29,7 @@ async function call<T>(url: string, init?: RequestInit): Promise<Result<T>> {
 }
 
 /* ---------- demo store (localStorage) ---------- */
-type DemoDB = { visitors: Record<string, Visitor>; messages: Message[]; rooms: Record<string, RoomOverride>; owner: boolean; movies?: Movie[] };
+type DemoDB = { visitors: Record<string, Visitor>; messages: Message[]; rooms: Record<string, RoomOverride>; owner: boolean; movies?: Movie[]; games?: { slots: Slot[]; notes: Note[] } };
 const KEY = "room.demo.db";
 function demoRead(): DemoDB {
   try {
@@ -233,6 +234,99 @@ export async function reorderTracks(order: string[]): Promise<Result<Track[]>> {
 export async function deleteTrack(id: string): Promise<Result<unknown>> {
   if (DEMO) return { ok: false, error: NO_UPLOAD_DEMO };
   return call(`/api/music?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+/* ---------- games ---------- */
+const NO_STEAM_DEMO = "미리보기에는 서버가 없어서 Steam 연결과 스크린샷 올리기를 쓸 수 없어요. 슬롯과 메모는 이 브라우저에 저장돼요.";
+type SlotInput = Partial<Pick<Slot, "id" | "title" | "status" | "progress" | "progressLabel" | "lastSpot" | "manualMinutes" | "appid">>;
+type NoteInput = Omit<Note, "id" | "example"> & { id?: string };
+
+export async function getGames(): Promise<Result<GamesPayload>> {
+  if (!DEMO) return call<GamesPayload>("/api/games");
+  const g = demoRead().games, empty = !g?.slots.length;
+  const slots = empty ? EXAMPLE_SLOTS : g!.slots, notes = empty ? EXAMPLE_NOTES : g!.notes;
+  return { ok: true, data: { slots: buildView(slots, notes), notes: [...notes].sort((a, b) => b.date.localeCompare(a.date)), syncedAt: null } };
+}
+
+export const shotUrl = (id: string) => `/api/games/shot/${id}`;
+
+export async function syncSteam(): Promise<Result<{ count: number }>> {
+  if (DEMO) return { ok: false, error: NO_STEAM_DEMO };
+  return call("/api/games/sync", { method: "POST" });
+}
+
+export async function getLibrary(q: string): Promise<Result<{ games: (SteamGame & { pinned: boolean })[]; syncedAt: number | null; error?: string }>> {
+  if (DEMO) return { ok: false, error: NO_STEAM_DEMO };
+  return call(`/api/games/library?q=${encodeURIComponent(q)}`);
+}
+
+/** Owner only. No id creates (pins `appid` or adds by hand), an id edits. */
+export async function saveSlot(input: SlotInput): Promise<Result<Slot>> {
+  if (!DEMO) {
+    const r = await call<{ slot: Slot }>("/api/games/slots", { method: input.id ? "PUT" : "POST", body: JSON.stringify(input) });
+    return r.ok ? { ok: true, data: r.data.slot } : r;
+  }
+  const db = demoRead();
+  if (!db.owner) return { ok: false, error: "권한이 없어요." };
+  if (input.appid !== undefined) return { ok: false, error: NO_STEAM_DEMO };
+  if (!input.title?.trim()) return { ok: false, error: "게임 이름을 적어주세요." };
+  const g = (db.games ??= { slots: [], notes: [] });
+  const cur = g.slots.find((x) => x.id === input.id);
+  const slot: Slot = {
+    id: cur?.id ?? crypto.randomUUID(), kind: "manual", addedAt: cur?.addedAt ?? Date.now(),
+    title: input.title.trim().slice(0, 80), status: input.status ?? "playing", progressLabel: input.progressLabel ?? "",
+    lastSpot: input.lastSpot ?? "", ...(input.progress !== undefined && { progress: input.progress }),
+    ...(input.manualMinutes !== undefined && { manualMinutes: input.manualMinutes }),
+  };
+  g.slots = cur ? g.slots.map((x) => (x.id === slot.id ? slot : x)) : [...g.slots, slot];
+  demoWrite(db);
+  return { ok: true, data: slot };
+}
+
+export async function deleteSlot(id: string): Promise<Result<unknown>> {
+  if (!DEMO) return call(`/api/games/slots?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  const db = demoRead();
+  if (!db.owner || !db.games) return { ok: false, error: "권한이 없어요." };
+  db.games.slots = db.games.slots.filter((x) => x.id !== id);
+  db.games.notes = db.games.notes.filter((n) => n.slotId !== id);
+  demoWrite(db);
+  return { ok: true, data: {} };
+}
+
+export async function saveNote(input: NoteInput): Promise<Result<Note>> {
+  if (!DEMO) {
+    const r = await call<{ note: Note }>("/api/games/notes", { method: input.id ? "PUT" : "POST", body: JSON.stringify(input) });
+    return r.ok ? { ok: true, data: r.data.note } : r;
+  }
+  const db = demoRead();
+  if (!db.owner || !db.games?.slots.some((x) => x.id === input.slotId)) return { ok: false, error: "그 게임 슬롯을 찾지 못했어요." };
+  if (!input.text.trim()) return { ok: false, error: "메모를 적어주세요." };
+  const note: Note = { ...input, id: input.id ?? crypto.randomUUID(), text: input.text.trim().slice(0, 500), shots: [] };
+  db.games.notes = input.id ? db.games.notes.map((n) => (n.id === note.id ? note : n)) : [...db.games.notes, note];
+  demoWrite(db);
+  return { ok: true, data: note };
+}
+
+export async function deleteNote(id: string): Promise<Result<unknown>> {
+  if (!DEMO) return call(`/api/games/notes?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+  const db = demoRead();
+  if (!db.owner || !db.games) return { ok: false, error: "권한이 없어요." };
+  db.games.notes = db.games.notes.filter((n) => n.id !== id);
+  demoWrite(db);
+  return { ok: true, data: {} };
+}
+
+/** Owner only: one screenshot. Multipart, so not through call(). */
+export async function uploadShot(file: File): Promise<Result<{ id: string }>> {
+  if (DEMO) return { ok: false, error: NO_STEAM_DEMO };
+  try {
+    const form = new FormData(); form.set("file", file);
+    const r = await fetch("/api/games/shots", { method: "POST", body: form, credentials: "same-origin" });
+    const data = await r.json().catch(() => ({}));
+    return r.ok ? { ok: true, data: { id: data.shot.id } } : { ok: false, error: data.error || "올리지 못했어요. 다시 시도해주세요." };
+  } catch {
+    return { ok: false, error: "서버에 연결하지 못했어요. 인터넷 연결을 확인해주세요." };
+  }
 }
 
 export async function getDashboard(): Promise<Result<Dashboard>> {

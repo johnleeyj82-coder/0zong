@@ -8,6 +8,7 @@ import { getMovies } from "@/lib/client";
 import { sortMovies, stars, summarize, type Movie as MovieRecord } from "@/lib/movies";
 import { ScoreBar } from "../components/movie/ScoreBar";
 import MusicRoom from "../components/music/MusicRoom";
+import GameRoom from "../components/game/GameRoom";
 import { PageLink } from "../components/PageLink";
 
 const heat = Array.from({ length: 26 * 7 }, (_, i) => {
@@ -15,22 +16,6 @@ const heat = Array.from({ length: 26 * 7 }, (_, i) => {
   return v > 0.82 ? 4 : v > 0.64 ? 3 : v > 0.45 ? 2 : v > 0.3 ? 1 : 0;
 });
 
-function Game() {
-  return (
-    <>
-      <table className="dt"><thead><tr><th>게임</th><th>진행</th><th>플레이</th></tr></thead><tbody>
-        <tr><td>엘든링</td><td>본편 엔딩 전</td><td>142h</td></tr>
-        <tr><td>할로우 나이트</td><td>112%</td><td>61h</td></tr>
-        <tr><td>발더스 게이트 3</td><td>2막</td><td>48h</td></tr>
-      </tbody></table>
-      <ul className="thread">
-        <li><span className="meta">10.25 · 엘든링 · +3.0h</span>말레니아 클리어. 2페이즈 패턴은 왼쪽으로 크게 구르기.</li>
-        <li><span className="meta">10.23 · 할로우 나이트 · +1.5h</span>눈물의 도시 비 내리는 구간 스크린샷 4장.</li>
-        <li><span className="meta">10.20 · 엘든링 · +2.0h</span>공략 메모: 호수 남쪽 계단 아래 숨은 상인.</li>
-      </ul>
-    </>
-  );
-}
 function Hack() {
   return (
     <>
@@ -121,7 +106,7 @@ function Work({ items }: { items: [string, string][] }) {
 
 export function RoomBody({ k }: { k: RoomKey }) {
   switch (k) {
-    case "game": return <Game />;
+    case "game": return <GameRoom />;
     case "hack": return <Hack />;
     case "poker": return <Poker />;
     case "book": return <Book />;

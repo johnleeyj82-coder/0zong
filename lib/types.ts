@@ -1,5 +1,6 @@
 import type { Movie } from "./movies";
 import type { Track } from "./music";
+import type { Note, Shot, Slot, SteamSnapshot } from "./games";
 
 export type VisitMode = "named" | "anonymous";
 export type EventType = "enter" | "view" | "dock" | "open" | "guestbook" | "score";
@@ -27,6 +28,8 @@ export type DB = {
   movies?: Movie[];
   /** Music room tracks, in play order. */
   tracks?: Track[];
+  /** Game room: pinned slots, play notes, screenshot records, and the last Steam snapshot. */
+  games?: { slots: Slot[]; notes: Note[]; shots: Shot[]; steam?: SteamSnapshot };
 };
 
 export type Dashboard = { visitors: Visitor[]; interest: Record<string, number>; messages: Message[] };
