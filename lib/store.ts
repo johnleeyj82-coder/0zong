@@ -9,6 +9,7 @@ import type { Movie } from "./movies";
 import type { Track } from "./music";
 import type { GameDetails, GameSettings, Note, Presence, Shot, Slot, SteamSnapshot } from "./games";
 import { EXAMPLE_MOVIES } from "./movies.example";
+import type { EnvOverride } from "./env";
 
 const FILE = process.env.ROOM_DB_FILE || path.join(process.cwd(), "data", "db.json");
 const MAX_EVENTS_PER_VISITOR = 2000;
@@ -261,6 +262,17 @@ function release(g: { notes: Note[]; shots: Shot[] }, ids: string[]): Shot[] {
   const gone = g.shots.filter((s) => ids.includes(s.id) && !used.has(s.id));
   g.shots = g.shots.filter((s) => !gone.includes(s));
   return gone;
+}
+
+export async function getEnvOverride(): Promise<EnvOverride> {
+  return (await read()).settings?.envOverride ?? "auto";
+}
+
+export function setEnvOverride(o: EnvOverride): Promise<EnvOverride> {
+  return mutate((db) => {
+    db.settings = { ...db.settings, envOverride: o };
+    return o;
+  });
 }
 
 export async function getDashboard() {

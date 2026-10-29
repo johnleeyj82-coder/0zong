@@ -7,6 +7,7 @@ import type { Track } from "./music";
 import { buildView, EXAMPLE_NOTES, EXAMPLE_SLOTS, type GamesPayload, type Note, type Slot, type SteamGame } from "./games";
 import type { TmdbHit, TmdbMovie } from "./tmdb.types";
 import { EXAMPLE_MOVIES } from "./movies.example";
+import { compose, openMeteoUrl, parseOpenMeteo, type EnvOverride, type EnvPayload } from "./env";
 
 export const DEMO = process.env.NEXT_PUBLIC_DEMO === "1";
 const DEMO_OWNER = "0zong";
@@ -341,6 +342,31 @@ export async function getDashboard(): Promise<Result<Dashboard>> {
   if (!db.owner) return { ok: false, error: "방 주인만 볼 수 있어요." };
   const interest: Record<string, number> = {};
   const visitors = Object.values(db.visitors).sort((a, b) => b.lastAt - a.lastAt);
-  for (const v of visitors) for (const e of v.events) if (e.room && e.type !== "enter" && e.type !== "guestbook") interest[e.room] = (interest[e.room] ?? 0) + (e.type === "open" ? 2 : 1);
+  for (const v of visitors) for (const e of v.events) if (e.room && e.type !== "enter" && e.type !== "guestbook" && e.type !== "move") interest[e.room] = (interest[e.room] ?? 0) + (e.type === "open" ? 2 : 1);
   return { ok: true, data: { visitors, interest, messages: [...db.messages].sort((a, b) => b.at - a.at) } };
+}
+
+/* ---------- Seoul time and weather ---------- */
+const DEMO_ENV = "room.demo.env";
+function demoOverride(): EnvOverride {
+  try { const v = localStorage.getItem(DEMO_ENV); return v === null ? "auto" : (JSON.parse(v) as EnvOverride); } catch { return "auto"; }
+}
+/** The static preview has no server, so it asks Open-Meteo directly (it allows browser requests). */
+async function demoEnv(): Promise<EnvPayload> {
+  let live = null;
+  try { const r = await fetch(openMeteoUrl()); if (r.ok) live = parseOpenMeteo(await r.json()); } catch { /* offline */ }
+  return compose(live, demoOverride());
+}
+
+export async function getEnv(): Promise<EnvPayload> {
+  if (DEMO) return demoEnv();
+  const r = await call<EnvPayload>("/api/env");
+  return r.ok ? r.data : compose(null, "auto");
+}
+
+export async function setEnvOverride(override: EnvOverride): Promise<Result<EnvPayload>> {
+  if (!DEMO) return call("/api/env", { method: "PUT", body: JSON.stringify({ override }) });
+  if (!demoRead().owner) return { ok: false, error: "권한이 없어요." };
+  try { localStorage.setItem(DEMO_ENV, JSON.stringify(override)); } catch { /* storage blocked */ }
+  return { ok: true, data: await demoEnv() };
 }

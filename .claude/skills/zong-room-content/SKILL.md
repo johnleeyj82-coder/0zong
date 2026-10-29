@@ -5,9 +5,10 @@ description: Use when adding or changing anything in the "0zong의 방" site —
 
 # 0zong의 방 — content, design, and feature rules
 
-The site is one room at night. Every hobby is an object in that room. Visitors scroll through a camera tour, then
-explore. Everything below the hero is the same room "with the lights on": it must feel like the inside of the hero,
-not a different website.
+The site is a small 3D house (메인 방 · 영화방 · 침실). Every hobby is an object in one of its rooms. There is no
+scrolling and no camera tour: `/` is one full-screen scene; visitors drag to look around, click objects, and walk
+through doors. Everything on top of the scene (cards, sheets, dock) must feel like part of the room, not a different
+website. The design spec is `docs/superpowers/specs/2026-10-29-3d-room-design.md`.
 
 ## 1. Voice and copy
 
@@ -36,22 +37,22 @@ Tokens live in `app/globals.css`. Use only these:
 
 - Fonts: display `Nanum Myeongjo 800`, body `IBM Plex Sans KR 300–600`, labels/data `JetBrains Mono`.
 - The signature motif is the **lamp frame**: a tungsten 1.5px glow with four viewfinder corners. Use it to mark "this
-  object is selected" everywhere (hero focus, dock hover target, room card hover, drawer header). Do not invent other
-  highlight styles.
+  object is selected" everywhere (caption card `.lamp-card`, drawer header `.lamp`). In 3D, the same tungsten
+  (`#e9b872`) is the hover/selected emissive glow. Do not invent other highlight styles.
 - Motion: slow ease-out `[0.16,1,0.3,1]` for entrances, `[0.25,0,0,1]` for section reveals (y 24→0, 100ms stagger,
   once). No bounce except the dock icon lift. Respect `prefers-reduced-motion`.
-- Surfaces: glassy dark cards (`rgba(24,17,12,.8)` + blur 12px) only over the canvas. Below the hero, use flat
-  `--bg` with hairline grids, not floating cards.
+- Surfaces: glassy dark cards (`rgba(24,17,12,.8)` + blur 12px) over the canvas; sheets (drawer, panels) use flat
+  `--bg-raise` with hairlines inside.
 
-## 3. Page structure after the hero
+## 3. Screen structure (no scrolling)
 
-In this order, each a `<section>` with a label, a Korean h2, and content:
-
-1. **About** — two columns: why the room exists + a still frame from `public/frames`.
-2. **The rooms** — a hairline grid of all rooms (`ROOMS` in `app/data.ts`). Every card opens the **room drawer**.
-3. **Lately** — a feed across all rooms, newest first, `when · icon · title · one-line note`.
-4. **Guestbook** — public messages (name, message, relative date). Form at the top, list below.
-5. **Closing** — two-line display heading, second line italic accent, "방으로 돌아가기".
+- The 3D house fills the screen. Rooms are data in `app/scene/spaces/<id>.ts` (things with placeholder parts or a GLB,
+  doors, lamps, camera). Hobbies say which room they stand in (`space` in `ROOMS`).
+- Top left (`SpaceBar`): house title, room tabs, `서울 HH:MM · 날씨 온도`, view settings (quality; owner: weather pin).
+- Clicking an object shows its **caption card** (bottom left) without moving the camera: `방 · 취미` label, title,
+  desc, update, "열어보기" → the room drawer. The bed shows the time picker instead (this tab only).
+- Doors: hover label "○○으로", click → 0.3s dark blink → that room, camera starting at the door you came through.
+- About + lately and the guestbook are **panels** (right sheets) opened from the dock.
 
 ### Room drawer (the detail view for one hobby)
 
@@ -75,30 +76,30 @@ Drawer bodies live in `app/rooms/bodies.tsx`; keep them data-driven so the owner
 
 ## 4. The icon dock
 
-- Always visible, bottom center, glass pill. Order: 홈 · tour rooms in tour order · tetris · divider · 방명록 ·
-  (owner only) 대시보드.
-- A thin tungsten progress line on top of the dock shows tour progress (0–100% of the hero).
-- Hover/focus: icon lifts 3px, tooltip with the Korean label. Active room (camera resting on it) is filled tungsten.
-- Clicking a tour room scrolls the hero to that room's mark; non-tour rooms open their drawer.
+- Always visible, bottom center, glass pill: hobbies grouped by room (영화방 | 메인 방, with separators), then
+  이 집 이야기 · 방명록 · (owner only) 방문 기록.
+- Hover/focus: icon lifts 3px, tooltip `취미 · 방`. The selected hobby is filled tungsten.
+- Clicking a hobby selects it; if it stands in another room, the house walks there first (blink), then shows the card.
 - If the visitor left a name, a small chip at the dock's left shows it ("하늘님"). Owner sees "편집 모드".
 - The dock is a framer-motion element: center it with `style={{ x: "-50%" }}`, not a CSS transform (framer overwrites it).
 - Every dock click is tracked (`dock` event).
 
 ## 5. Opening (first load)
 
-1. Dark room: the first frame at ~10% brightness, rain visible through the window.
+1. Dark room: the 3D scene (or still photo) at ~10% brightness, rain visible through the window when it rains.
 2. Lamps flicker on (brightness 0.1 → 0.45 → 0.3 → 1 over ~1.6s).
 3. Guestbook gate appears (skipped for returning visitors, who get "다시 왔네요, ○○님"):
    이름 입력 + [들어가기] · [익명으로] · [그냥 둘러볼게요], with the disclosure line
    "이름을 남기면 이 방에서 무엇을 봤는지 방 주인이 볼 수 있어요. IP나 위치는 저장하지 않아요."
-4. Then the identity block rises in.
+4. Then the dock and the top-left bar rise in.
 
 ## 6. Visitors, tracking, privacy
 
 - Modes: `named` (their name), `anonymous` (stored as `익명 ####`), `skip` (no record at all — send nothing).
 - Never store IP, user agent, or location. Store only: visitor id (random, client-generated), name, mode, timestamps,
   and events.
-- Events: `enter`, `view` (a room caption visible ≥ 1.2s), `dock`, `open` (drawer), `guestbook`, `score`. Batch them
+- Events: `enter`, `view` (a caption card visible ≥ 1.2s), `dock`, `open` (drawer), `guestbook`, `score`, `move`
+  (walked into another room; `room` is the space id). Batch them
   client-side; flush on an interval and on `pagehide` with `sendBeacon`.
 - Guestbook messages are public. Activity is visible only to the owner.
 - Storage goes through `lib/store.ts` only (JSON file by default). For serverless hosts, replace those functions with a
@@ -117,6 +118,6 @@ Drawer bodies live in `app/rooms/bodies.tsx`; keep them data-driven so the owner
 
 1. Add a record to `ROOMS` in `app/data.ts` (key, label, title, desc, update, lucide icon) and its key to
    `ROOM_KEYS` in `lib/validate.ts`.
-2. If it is in the camera tour: add its `mark` and frame `rect`, and re-render frames.
+2. Set its `space`, and add a thing with `hobby: "<key>"` to that room in `app/scene/spaces/<id>.ts`.
 3. Add a drawer body in `app/rooms/bodies.tsx` following the table above.
-4. It appears automatically in the dock, the grid, and the dashboard's interest chart.
+4. It appears automatically in the dock, the keyboard object list, and the dashboard's interest chart.

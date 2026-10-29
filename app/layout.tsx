@@ -6,7 +6,7 @@ import ListenMode from "./components/music/ListenMode";
 
 export const metadata: Metadata = {
   title: "0zong의 방",
-  description: "취미와 공부를 전부 모아둔 방 하나. 스크롤하면 카메라가 물체를 하나씩 비춥니다.",
+  description: "취미와 공부를 전부 모아둔 3D 집. 물건을 누르면 그 취미의 기록이 나오고, 문을 열면 옆방으로 가요.",
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#15100c" };

@@ -4,6 +4,8 @@ import { CRITERIA, type Movie, type Scores } from "./movies";
 export const clean = (s: unknown, max: number) =>
   typeof s === "string" ? s.replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, max) : "";
 export const isId = (s: unknown): s is string => typeof s === "string" && /^[a-zA-Z0-9-]{8,64}$/.test(s);
+/** The rooms of the house you walk between (doors). Hobbies live inside them. */
+export const SPACE_IDS = ["main", "cinema", "bedroom"];
 export const ROOM_KEYS = ["music", "video", "book", "game", "hack", "poker", "art", "whisky", "chess", "movie", "tetris"];
 
 /* ---------- movies ---------- */

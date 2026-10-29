@@ -1,48 +1,37 @@
 "use client";
-import { useState } from "react";
-import { motion, useMotionValueEvent, useTransform } from "framer-motion";
-import { BarChart3, MessageSquareText } from "lucide-react";
-import { HOME_ICON, MARKS, type RoomKey } from "../data";
-import { scrollToId, scrollToProgress, useHero } from "./HeroContext";
+import { Fragment } from "react";
+import { motion } from "framer-motion";
+import { BarChart3, Info, MessageSquareText } from "lucide-react";
+import { SPACES } from "../data";
 import { useRoom } from "./RoomContext";
+import { useScene } from "./SceneContext";
 
-/** Fixed dock: home, every room, guestbook, and (owner) the dashboard. A tungsten line on top shows tour progress. */
+/** Fixed dock: every hobby grouped by the room it stands in, then the about page, guestbook and (owner) the dashboard. */
 export default function IconBar() {
-  const { progress, heroRef } = useHero();
-  const { rooms, track, openDrawer, owner, name, mode, setDashboard, phase } = useRoom();
-  const [active, setActive] = useState<RoomKey | null>(null);
-  const width = useTransform(progress, (p) => `${Math.round(p * 100)}%`);
-
-  useMotionValueEvent(progress, "change", (p) => {
-    const hit = rooms.find((r) => r.mark !== undefined && Math.abs(MARKS[r.mark] - p) < 0.044);
-    setActive(p >= 1 ? null : hit ? hit.key : null);
-  });
-
-  const go = (key: RoomKey) => {
-    const room = rooms.find((r) => r.key === key)!;
-    track("dock", key);
-    if (room.mark !== undefined) scrollToProgress(heroRef.current, MARKS[room.mark]);
-    else openDrawer(key);
-  };
-  const Home = HOME_ICON;
+  const { rooms, track, owner, name, mode, setDashboard, setPanel, phase } = useRoom();
+  const { select, selected } = useScene();
   const chip = owner ? "편집 모드" : mode === "named" || mode === "anonymous" ? `${name}님` : null;
 
   return (
-    <motion.nav className="dock" aria-label="방 바로가기" style={{ x: "-50%" }} initial={{ opacity: 0, y: 24 }}
+    <motion.nav className="dock" aria-label="취미 바로가기" style={{ x: "-50%" }} initial={{ opacity: 0, y: 24 }}
       animate={phase === "done" ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }} transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}>
-      <motion.span className="dock-progress" style={{ width }} aria-hidden />
       {chip && <span className={owner ? "dock-chip owner" : "dock-chip"}>{chip}</span>}
-      <button className="dock-btn" onClick={() => scrollToProgress(heroRef.current, 0)} aria-label="처음으로">
-        <Home size={19} aria-hidden /><span className="dock-tip">처음으로</span>
-      </button>
-      <span className="dock-sep" aria-hidden />
-      {rooms.map((r) => (
-        <button key={r.key} className="dock-btn" onClick={() => go(r.key)} aria-label={r.label} aria-current={active === r.key}>
-          <r.icon size={19} aria-hidden /><span className="dock-tip">{r.label}</span>
-        </button>
+      {SPACES.map((s, i) => (
+        <Fragment key={s.id}>
+          {i > 0 && <span className="dock-sep" aria-hidden />}
+          {rooms.filter((r) => r.space === s.id).map((r) => (
+            <button key={r.key} className="dock-btn" aria-label={`${r.label} (${s.label})`} aria-current={selected === r.key}
+              onClick={() => { track("dock", r.key); select(r.key); }}>
+              <r.icon size={19} aria-hidden /><span className="dock-tip">{r.label} · {s.label}</span>
+            </button>
+          ))}
+        </Fragment>
       ))}
       <span className="dock-sep" aria-hidden />
-      <button className="dock-btn" onClick={() => scrollToId("guestbook")} aria-label="방명록">
+      <button className="dock-btn" onClick={() => setPanel("about")} aria-label="이 집 이야기">
+        <Info size={19} aria-hidden /><span className="dock-tip">이 집 이야기</span>
+      </button>
+      <button className="dock-btn" onClick={() => setPanel("guestbook")} aria-label="방명록">
         <MessageSquareText size={19} aria-hidden /><span className="dock-tip">방명록</span>
       </button>
       {owner && (

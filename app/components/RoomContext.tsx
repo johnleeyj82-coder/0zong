@@ -7,6 +7,8 @@ import type { EventType, RoomOverride, TrackEvent } from "@/lib/types";
 /** How this visitor entered: left a name, went anonymous, skipped (never tracked), or is the owner (never tracked). */
 export type Mode = "named" | "anonymous" | "skip" | "owner";
 export type Phase = "dark" | "lights" | "gate" | "done";
+/** Side panels opened from the dock (the old sections below the hero). */
+export type Panel = "about" | "guestbook";
 
 type Saved = { id: string; name: string; mode: Mode };
 const STORE = "room.visitor";
@@ -29,6 +31,8 @@ type Ctx = {
   openDrawer: (key: RoomKey | null) => void;
   dashboard: boolean;
   setDashboard: (v: boolean) => void;
+  panel: Panel | null;
+  setPanel: (p: Panel | null) => void;
 };
 const C = createContext<Ctx | null>(null);
 
@@ -51,6 +55,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
   const [overrides, setOverrides] = useState<Record<string, RoomOverride>>({});
   const [drawer, setDrawer] = useState<RoomKey | null>(null);
   const [dashboard, setDashboard] = useState(false);
+  const [panel, setPanel] = useState<Panel | null>(null);
   const queue = useRef<TrackEvent[]>([]);
   const modeRef = useRef<Mode | null>(null);
   const idRef = useRef("");
@@ -115,7 +120,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
 
   const value: Ctx = {
     visitorId, name, mode, owner, returning, ready, phase, setPhase, enter, setOwner, track,
-    rooms, editRoom, drawer, openDrawer, dashboard, setDashboard,
+    rooms, editRoom, drawer, openDrawer, dashboard, setDashboard, panel, setPanel,
   };
   return <C.Provider value={value}>{children}</C.Provider>;
 }

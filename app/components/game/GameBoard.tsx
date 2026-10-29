@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ChevronLeft, Eye, EyeOff, Pencil, PenLine, Pin, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { checkOwner, deleteNote, deleteSlot, getGames, setShowPresence, shotUrl, syncSteam } from "@/lib/client";
 import { playtime, shownProgress, STATUSES, type Achievement, type GamesPayload, type GameView, type Note } from "@/lib/games";
-import { ago } from "../GuestbookSection";
+import { ago } from "../Guestbook";
 import { PageLink } from "../PageLink";
 import { Sheet } from "../movie/Sheet";
 import { Cover } from "./Cover";

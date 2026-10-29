@@ -7,23 +7,26 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "frames": "node scripts/count-frames.mjs",
     "hash-password": "node scripts/hash-password.mjs",
     "export-preview": "bash scripts/export-preview.sh",
     "apochill": "node integrations/apochill/run.mjs"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
     "framer-motion": "^11.18.2",
     "lucide-react": "^1.61.0",
     "next": "^15.5.28",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.186.0",
     "typescript": "^5.7.0"
   },
   "overrides": {

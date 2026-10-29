@@ -1,33 +1,30 @@
-import { HeroProvider } from "./components/HeroContext";
 import { RoomProvider } from "./components/RoomContext";
-import ScrollHero from "./components/ScrollHero";
+import { SceneProvider } from "./components/SceneContext";
+import RoomStage from "./components/RoomStage";
+import SpaceBar from "./components/SpaceBar";
+import Caption from "./components/Caption";
 import Opening from "./components/Opening";
 import IconBar from "./components/IconBar";
 import RoomDrawer from "./components/RoomDrawer";
+import Panels from "./components/Panels";
 import DashboardOverlay from "./components/DashboardOverlay";
-import AboutSection from "./components/AboutSection";
-import RoomsSection from "./components/RoomsSection";
-import NowSection from "./components/NowSection";
-import GuestbookSection from "./components/GuestbookSection";
-import ClosingCTA from "./components/ClosingCTA";
 
+/** One screen, no scrolling: the 3D house with the UI on top of it. */
 export default function Page() {
   return (
     <RoomProvider>
-      <HeroProvider>
-        <main style={{ background: "#15100c" }}>
-          <ScrollHero />
-          <AboutSection />
-          <RoomsSection />
-          <NowSection />
-          <GuestbookSection />
-          <ClosingCTA />
+      <SceneProvider>
+        <main className="home">
+          <RoomStage />
+          <SpaceBar />
+          <Caption />
         </main>
         <Opening />
         <IconBar />
         <RoomDrawer />
+        <Panels />
         <DashboardOverlay />
-      </HeroProvider>
+      </SceneProvider>
     </RoomProvider>
   );
 }

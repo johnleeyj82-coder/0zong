@@ -7,7 +7,7 @@ import { usePlayer } from "./PlayerContext";
 import { Mixer, Seek, TimerMenu, Transport } from "./Controls";
 
 // The wide shot of the room. Window and lamps are given as fractions of the 1280×720 frame.
-const SCENE = `${DEMO ? "" : "/"}frames/frame_0202.jpg`;
+const SCENE = `${DEMO ? "" : "/"}room/main.jpg`;
 const FW = 1280, FH = 720;
 const WINDOW = { x: 0.448, y: 0.09, w: 0.207, h: 0.368 };
 const LAMPS = [{ x: 0.628, y: 0.4, r: 0.11 }, { x: 0.99, y: 0.53, r: 0.12 }, { x: 0.11, y: 0.46, r: 0.07 }];

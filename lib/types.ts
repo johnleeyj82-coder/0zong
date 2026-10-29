@@ -1,9 +1,11 @@
 import type { Movie } from "./movies";
 import type { Track } from "./music";
+import type { EnvOverride } from "./env";
 import type { GameDetails, GameSettings, Note, Presence, Shot, Slot, SteamSnapshot } from "./games";
 
 export type VisitMode = "named" | "anonymous";
-export type EventType = "enter" | "view" | "dock" | "open" | "guestbook" | "score";
+/** `move` is going through a door to another room of the house; its `room` is the space id (main, cinema, bedroom). */
+export type EventType = "enter" | "view" | "dock" | "open" | "guestbook" | "score" | "move";
 
 export type TrackEvent = { type: EventType; room?: string; at: number; value?: number };
 
@@ -36,6 +38,8 @@ export type DB = {
     presence?: Presence;
     settings?: GameSettings;
   };
+  /** Site-wide settings the owner sets. */
+  settings?: { envOverride?: EnvOverride };
 };
 
 export type Dashboard = { visitors: Visitor[]; interest: Record<string, number>; messages: Message[] };

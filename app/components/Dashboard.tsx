@@ -3,11 +3,11 @@ import { useEffect, useState } from "react";
 import { LogOut, X } from "lucide-react";
 import { getDashboard, logout } from "@/lib/client";
 import type { Dashboard as D, Visitor } from "@/lib/types";
-import { ROOMS } from "../data";
-import { ago } from "./GuestbookSection";
+import { spaceLabel, ROOMS } from "../data";
+import { ago } from "./Guestbook";
 
-const TYPE_LABEL: Record<string, string> = { enter: "들어옴", view: "봄", dock: "바로가기", open: "열어봄", guestbook: "방명록 씀", score: "기록 세움" };
-const roomLabel = (k?: string) => ROOMS.find((r) => r.key === k)?.label ?? "";
+const TYPE_LABEL: Record<string, string> = { enter: "들어옴", view: "봄", dock: "바로가기", open: "열어봄", guestbook: "방명록 씀", score: "기록 세움", move: "방 이동" };
+const roomLabel = (k?: string) => ROOMS.find((r) => r.key === k)?.label ?? spaceLabel(k);
 
 /** Owner-only view: which rooms people care about, who visited, and what each named visitor did. */
 export default function Dashboard({ onClose, onLogout }: { onClose?: () => void; onLogout?: () => void }) {
