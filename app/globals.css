@@ -649,3 +649,39 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .save-head .cover.big { width: 72px; }
   .save-stats dd { font-size: 1rem; }
 }
+
+/* game: Steam details */
+.now-playing { display: inline-flex; align-items: center; gap: 0.55rem; margin-top: 1.2rem; font-size: 0.9rem; color: var(--text-body); }
+.now-playing b { color: var(--text); font-weight: 600; }
+.now-playing i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px rgba(233, 184, 114, 0.8); }
+@media (prefers-reduced-motion: no-preference) { .now-playing i { animation: pulse 1.8s ease-in-out infinite; } }
+.store { display: grid; gap: 0.4rem; }
+.store-desc { color: var(--text-body); font-size: 0.9rem; }
+.platforms { display: flex; flex-wrap: wrap; gap: 0.3rem 1.2rem; font-size: 0.8rem; color: var(--text-dim); }
+.platforms b { font-family: var(--mono); font-weight: 400; color: var(--text-body); margin-left: 0.2rem; }
+.save-h span { color: var(--accent); margin-left: 0.5rem; letter-spacing: 0.05em; }
+.ach { display: grid; gap: 0.7rem; }
+.ach-icon { width: 40px; height: 40px; border-radius: 6px; flex: none; display: block; background: var(--bg-raise); }
+.ach-icon[data-locked] { opacity: 0.45; }
+.ach-rare { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 0.5rem; }
+.ach-rare li { display: flex; gap: 0.7rem; align-items: center; padding: 0.6rem; border: 1px solid rgba(233, 184, 114, 0.35); border-radius: 10px; background: rgba(233, 184, 114, 0.05); }
+.ach-rare span { display: grid; min-width: 0; }
+.ach-rare b { font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ach-rare small { font-family: var(--mono); font-size: 0.7rem; color: var(--accent); }
+.ach-toggle { justify-self: start; padding: 0.5rem 0.9rem; font-size: 0.8rem; }
+.ach-all { list-style: none; display: grid; max-height: 28rem; overflow-y: auto; border-top: 1px solid var(--border); }
+.ach-all li { display: grid; grid-template-columns: 40px 1fr auto; gap: 0.8rem; align-items: center; padding: 0.55rem 0; border-bottom: 1px solid var(--border); }
+.ach-all li[data-locked] b { color: var(--text-dim); }
+.ach-meta { display: grid; text-align: right; font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim); }
+.ach-meta small { color: var(--accent); }
+.game-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem 1.2rem; }
+.game-stats dt { font-size: 0.74rem; color: var(--text-dim); }
+.game-stats dd { font-family: var(--mono); font-size: 1rem; }
+.log-ach { display: flex; gap: 0.7rem; align-items: center; }
+.log-ach .ach-icon { width: 32px; height: 32px; }
+.log-ach span { display: grid; }
+.log-ach b { color: var(--text); font-weight: 500; }
+.log-ach small { font-size: 0.78rem; color: var(--text-dim); }
+.mini-slots small { font-size: 0.74rem; color: var(--text-dim); }
+.game-stats { margin-top: 0.6rem; }
+.ach-all { padding-right: 0.3rem; }

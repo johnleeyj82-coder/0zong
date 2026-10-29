@@ -250,6 +250,12 @@ export async function getGames(): Promise<Result<GamesPayload>> {
 
 export const shotUrl = (id: string) => `/api/games/shot/${id}`;
 
+/** Owner only: show or hide "now playing". */
+export async function setShowPresence(on: boolean): Promise<Result<unknown>> {
+  if (DEMO) return { ok: false, error: NO_STEAM_DEMO };
+  return call("/api/games/settings", { method: "PUT", body: JSON.stringify({ showPresence: on }) });
+}
+
 export async function syncSteam(): Promise<Result<{ count: number }>> {
   if (DEMO) return { ok: false, error: NO_STEAM_DEMO };
   return call("/api/games/sync", { method: "POST" });

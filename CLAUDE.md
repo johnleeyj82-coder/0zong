@@ -33,10 +33,10 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `app/components/music/` | site-wide player (`PlayerProvider` in `app/layout.tsx`): audio engine with generated rain/fire, mini player, listening mode, music drawer |
 | `app/game/` + `app/components/game/` | `/game` LOAD GAME screen: save slots (↑↓/Enter), play notes with screenshots, owner pin/edit; drawer summary |
 | `lib/games.ts` | slots, notes, Steam snapshot types, `buildView` (merges Steam minutes), examples |
-| `lib/steam.ts` | server-only Steam Web API (`STEAM_API_KEY`, `STEAM_ID`); snapshot refreshed by owner or when 6h stale |
+| `lib/steam.ts` | server-only Steam Web API (`STEAM_API_KEY`, `STEAM_ID`): owned games + platform time, per pinned game achievements (schema, world %), named stats, store facts; now playing (opt-in). Refreshed by owner, on pin, or when 6h stale |
 | `lib/files.ts` | server-only file storage (`data/music/`, `data/shots/`), audio/image sniffing; swap with `lib/store.ts` for deployment |
 | `lib/tmdb.ts` | server-only TMDB client (`TMDB_API_KEY` in `.env.local`); only `/api/tmdb` (owner only) calls it |
-| `app/api/*` | visit, auth, events, guestbook, rooms, admin, movies (+ import), tmdb, music (+ `file/[id]` with Range), games (sync, library, slots, notes, shots) |
+| `app/api/*` | visit, auth, events, guestbook, rooms, admin, movies (+ import), tmdb, music (+ `file/[id]` with Range), games (sync, library, slots, notes, shots, settings) |
 | `lib/store.ts` | the only storage layer (JSON file `data/db.json`) |
 | `lib/auth.ts` | owner check (scrypt), signed HTTP-only cookie |
 | `lib/client.ts` | browser API; `NEXT_PUBLIC_DEMO=1` switches to localStorage |
@@ -54,7 +54,8 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
   between pages go through `PageLink` (client navigation) so playback survives `/` ↔ `/movie`.
 - Uploaded audio is checked by its bytes (`sniffAudio`), never by name or browser MIME; uploads are owner only, 30MB max.
 - Steam key and SteamID stay on the server; visitors get only pinned slots, never the full library. Screenshots are
-  sniffed (jpg/png/webp), owner only, 5MB, 4 per note.
+  sniffed (jpg/png/webp), owner only, 5MB, 4 per note. Achievement icons pass only from Steam CDN hosts; "now playing"
+  is off by default and turning it off deletes the stored status.
 - The TMDB key stays on the server; movie writes and `/api/tmdb` are owner only. Poster paths must match TMDB's `/x.jpg` form.
 
 ## Status (2026-10-26)

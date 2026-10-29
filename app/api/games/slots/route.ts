@@ -4,6 +4,7 @@ import { isOwner } from "@/lib/auth";
 import { getGames, removeSlot, saveSlot } from "@/lib/store";
 import { removeImage } from "@/lib/files";
 import { parseSlotFields } from "@/lib/validate";
+import { syncDetails } from "../steam-sync";
 
 const forbidden = () => NextResponse.json({ error: "권한이 없어요." }, { status: 403 });
 
@@ -26,6 +27,8 @@ export async function POST(req: Request) {
     id: randomUUID(), addedAt: Date.now(), ...fields,
     ...(b.appid !== undefined ? { kind: "steam" as const, appid } : { kind: "manual" as const, ...(manualMinutes !== undefined && { manualMinutes }) }),
   });
+  // Achievements, stats and store facts for the new slot arrive in the background.
+  if (slot.appid !== undefined) void syncDetails(slot.appid).catch(() => {});
   return NextResponse.json({ slot });
 }
 

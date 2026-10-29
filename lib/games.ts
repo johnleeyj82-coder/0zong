@@ -37,17 +37,52 @@ export type Note = {
 
 export type Shot = { id: string; ext: string; mime: string; size: number };
 
+export const PLATFORMS = { windows: "Windows", mac: "Mac", linux: "Linux", deck: "Steam Deck" } as const;
+export type Platform = keyof typeof PLATFORMS;
+
 /** One owned game as Steam reports it. Minutes; lastPlayed is ms since epoch (0 = never). */
-export type SteamGame = { appid: number; name: string; minutes: number; recentMinutes: number; lastPlayed: number };
+export type SteamGame = {
+  appid: number; name: string; minutes: number; recentMinutes: number; lastPlayed: number;
+  /** Minutes per platform (only the ones Steam reports). */
+  platforms?: Partial<Record<Platform, number>>;
+};
 export type SteamSnapshot = { syncedAt: number; games: SteamGame[]; error?: string };
 
+export type Achievement = {
+  id: string; name: string; desc: string; icon: string; iconGray: string; hidden: boolean;
+  achieved: boolean; /** ms, 0 when locked */ unlockedAt: number; /** share of all players, 0–100 */ globalPct?: number;
+};
+export type GameStat = { id: string; name: string; value: number };
+export type StoreInfo = { description: string; genres: string[]; released: string; developers: string[] };
+/** Everything fetched per pinned Steam game. A section is missing when Steam had nothing (or refused) for it. */
+export type GameDetails = { syncedAt: number; achievements?: Achievement[]; stats?: GameStat[]; store?: StoreInfo };
+export type Presence = { at: number; appid?: number; name?: string };
+export type GameSettings = { showPresence: boolean };
+
 /** What visitors see for a slot: the slot plus the numbers merged from Steam or the notes. */
-export type GameView = Slot & { minutes: number; recentMinutes: number; lastPlayed: number };
-export type GamesPayload = { slots: GameView[]; notes: Note[]; syncedAt: number | null; steamError?: string };
+export type GameView = Slot & {
+  minutes: number; recentMinutes: number; lastPlayed: number;
+  platforms?: Partial<Record<Platform, number>>;
+  details?: Omit<GameDetails, "syncedAt">;
+  /** Achievement count, when the game has achievements. */
+  ach?: { done: number; total: number };
+};
+export type GamesPayload = {
+  slots: GameView[]; notes: Note[]; syncedAt: number | null; steamError?: string;
+  /** Only when the owner turned it on and the information is fresh. */
+  nowPlaying?: { appid?: number; name: string };
+  showPresence?: boolean;
+};
 
 export const MAX_SHOT_BYTES = 5 * 1024 * 1024;
 export const MAX_SHOTS_PER_NOTE = 4;
 export const STEAM_STALE_MS = 6 * 3600_000;
+export const PRESENCE_REFRESH_MS = 2 * 60_000;
+export const PRESENCE_MAX_AGE_MS = 10 * 60_000;
+
+/** The progress the save screen shows: the owner's number first, otherwise the achievement share. */
+export const shownProgress = (v: GameView) =>
+  v.progress ?? (v.ach && v.ach.total ? Math.round((v.ach.done / v.ach.total) * 100) : undefined);
 
 /** Play time as a save file shows it: hours:minutes, e.g. 142:20. */
 export const playtime = (min: number) => `${Math.floor(min / 60)}:${String(Math.round(min % 60)).padStart(2, "0")}`;
@@ -56,18 +91,24 @@ export const steamCover = (appid: number, kind: "portrait" | "header" = "portrai
   `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/${kind === "portrait" ? "library_600x900.jpg" : "header.jpg"}`;
 
 /** Merges Steam numbers into the slots and orders them by the most recently played. */
-export function buildView(slots: Slot[], notes: Note[], steam?: SteamSnapshot | null): GameView[] {
+export function buildView(slots: Slot[], notes: Note[], steam?: SteamSnapshot | null, details?: Record<string, GameDetails>): GameView[] {
   const byApp = new Map((steam?.games ?? []).map((g) => [g.appid, g]));
   const lastNote = new Map<string, number>();
   for (const n of notes) lastNote.set(n.slotId, Math.max(lastNote.get(n.slotId) ?? 0, Date.parse(n.date) || 0));
   return slots
     .map((s) => {
       const g = s.appid !== undefined ? byApp.get(s.appid) : undefined;
+      const det = s.appid !== undefined ? details?.[s.appid] : undefined;
+      const achs = det?.achievements;
+      const lastAch = Math.max(0, ...(achs ?? []).map((a) => a.unlockedAt));
       return {
         ...s,
         minutes: g?.minutes ?? s.manualMinutes ?? 0,
         recentMinutes: g?.recentMinutes ?? 0,
-        lastPlayed: Math.max(g?.lastPlayed ?? 0, lastNote.get(s.id) ?? 0),
+        lastPlayed: Math.max(g?.lastPlayed ?? 0, lastNote.get(s.id) ?? 0, lastAch),
+        ...(g?.platforms && { platforms: g.platforms }),
+        ...(det && { details: { achievements: det.achievements, stats: det.stats, store: det.store } }),
+        ...(achs?.length && { ach: { done: achs.filter((a) => a.achieved).length, total: achs.length } }),
       };
     })
     .sort((a, b) => b.lastPlayed - a.lastPlayed || b.addedAt - a.addedAt);

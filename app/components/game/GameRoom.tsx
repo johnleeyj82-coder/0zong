@@ -18,11 +18,12 @@ export default function GameRoom() {
   const title = (id: string) => data.slots.find((s) => s.id === id)?.title ?? "";
   return (
     <>
+      {data.nowPlaying && <p className="now-playing" role="status"><i aria-hidden /> 지금 <b>{data.nowPlaying.name}</b> 하는 중</p>}
       <ol className="mini-slots">
         {data.slots.slice(0, 3).map((s) => (
           <li key={s.id}>
             <Cover slot={s} />
-            <span className="tt-wrap"><b>{s.title}{s.example && <em className="ex-tag">예시</em>}</b><small>{[STATUSES[s.status], s.progressLabel].filter(Boolean).join(", ")}</small></span>
+            <span className="tt-wrap"><b>{s.title}{s.example && <em className="ex-tag">예시</em>}</b><small>{[STATUSES[s.status], s.progressLabel, s.ach ? `업적 ${s.ach.done}/${s.ach.total}` : ""].filter(Boolean).join(", ")}</small></span>
             <span className="n">{playtime(s.minutes)}</span>
           </li>
         ))}

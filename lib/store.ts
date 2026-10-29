@@ -7,7 +7,7 @@ import path from "node:path";
 import type { DB, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
 import type { Movie } from "./movies";
 import type { Track } from "./music";
-import type { Note, Shot, Slot, SteamSnapshot } from "./games";
+import type { GameDetails, GameSettings, Note, Presence, Shot, Slot, SteamSnapshot } from "./games";
 import { EXAMPLE_MOVIES } from "./movies.example";
 
 const FILE = process.env.ROOM_DB_FILE || path.join(process.cwd(), "data", "db.json");
@@ -181,7 +181,27 @@ const gamesOf = (db: DB) => (db.games ??= { slots: [], notes: [], shots: [] });
 
 export async function getGames() {
   const g = (await read()).games;
-  return { slots: g?.slots ?? [], notes: g?.notes ?? [], shots: g?.shots ?? [], steam: g?.steam ?? null };
+  return {
+    slots: g?.slots ?? [], notes: g?.notes ?? [], shots: g?.shots ?? [], steam: g?.steam ?? null,
+    details: g?.details ?? {}, presence: g?.presence ?? null, settings: { showPresence: false, ...g?.settings },
+  };
+}
+
+export function setGameDetails(appid: number, d: GameDetails): Promise<GameDetails> {
+  return mutate((db) => { (gamesOf(db).details ??= {})[appid] = d; return d; });
+}
+
+export function setPresence(p: Presence): Promise<Presence> {
+  return mutate((db) => { gamesOf(db).presence = p; return p; });
+}
+
+export function setGameSettings(o: Partial<GameSettings>): Promise<GameSettings> {
+  return mutate((db) => {
+    const g = gamesOf(db);
+    g.settings = { showPresence: false, ...g.settings, ...o };
+    if (!g.settings.showPresence) delete g.presence; // turning it off forgets what was there
+    return g.settings;
+  });
 }
 
 export function setSteamSnapshot(s: SteamSnapshot): Promise<SteamSnapshot> {

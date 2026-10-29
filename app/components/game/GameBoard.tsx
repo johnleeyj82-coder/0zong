@@ -1,14 +1,15 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ChevronLeft, Pencil, PenLine, Pin, Plus, RefreshCw, Trash2, X } from "lucide-react";
-import { checkOwner, deleteNote, deleteSlot, getGames, shotUrl, syncSteam } from "@/lib/client";
-import { playtime, STATUSES, type GamesPayload, type GameView, type Note } from "@/lib/games";
+import { ArrowLeft, ChevronLeft, Eye, EyeOff, Pencil, PenLine, Pin, Plus, RefreshCw, Trash2, X } from "lucide-react";
+import { checkOwner, deleteNote, deleteSlot, getGames, setShowPresence, shotUrl, syncSteam } from "@/lib/client";
+import { playtime, shownProgress, STATUSES, type Achievement, type GamesPayload, type GameView, type Note } from "@/lib/games";
 import { ago } from "../GuestbookSection";
 import { PageLink } from "../PageLink";
 import { Sheet } from "../movie/Sheet";
 import { Cover } from "./Cover";
 import { NoteEditor, PinPicker, SlotEditor } from "./Editors";
+import { AchievementPanel, PlatformLine, recentUnlocks, StatsTable, StoreBlock, UnlockRow } from "./Details";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 const day = (iso: string) => iso.slice(5).replace("-", ".");
@@ -36,6 +37,15 @@ export default function GameBoard() {
   const slots = data?.slots ?? [];
   const current = slots[Math.min(sel, slots.length - 1)];
   const notes = useMemo(() => (data?.notes ?? []).filter((n) => n.slotId === current?.id), [data, current]);
+  /** Play log: the owner's notes and recent achievement unlocks, newest first. */
+  const log = useMemo(() => {
+    if (!current) return [];
+    const rows: ({ k: "note"; at: number; n: Note } | { k: "ach"; at: number; a: Achievement })[] = [
+      ...notes.map((n) => ({ k: "note" as const, at: Date.parse(`${n.date}T23:59:59`), n })),
+      ...recentUnlocks(current).map((a) => ({ k: "ach" as const, at: a.unlockedAt, a })),
+    ];
+    return rows.sort((x, y) => y.at - x.at);
+  }, [notes, current]);
   const examples = !!slots.length && slots.every((s) => s.example);
   const closeTool = useCallback(() => setTool(null), []);
 
@@ -71,6 +81,35 @@ export default function GameBoard() {
     void load();
   };
   const saved = (msg: string) => { setTool(null); setNotice(msg); void load(); };
+  const togglePresence = async () => {
+    const on = !data?.showPresence;
+    const r = await setShowPresence(on);
+    setNotice(r.ok ? (on ? "지금 하는 게임을 방문자에게 보여줘요. 2분마다 확인해요." : "지금 하는 게임 표시를 껐어요.") : r.error);
+    void load();
+  };
+
+  const renderNote = (n: Note) => (
+    <li key={n.id}>
+      <span className="log-meta">{day(n.date)}{n.hours ? ` · +${n.hours}h` : ""}{n.example ? " · 예시" : ""}</span>
+      <p>{n.text}</p>
+      {n.shots.length > 0 && (
+        <div className="shots">
+          {n.shots.map((id) => (
+            <button key={id} onClick={() => setShot(id)} aria-label="스크린샷 크게 보기">
+              <img src={shotUrl(id)} alt="" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+      {owner && !n.example && (
+        <span className="log-tools">
+          <button className="icon-btn" onClick={() => setTool({ kind: "note", slot: current, note: n })} aria-label="메모 고치기"><Pencil size={13} /></button>
+          <button className="icon-btn danger" onClick={() => removeNote(n)} onBlur={() => setConfirm(null)} data-armed={confirm === n.id ? "" : undefined}
+            aria-label={confirm === n.id ? "한 번 더 누르면 지워져요" : "메모 지우기"} title={confirm === n.id ? "한 번 더 누르면 지워져요" : "메모 지우기"}><Trash2 size={13} /></button>
+        </span>
+      )}
+    </li>
+  );
 
   return (
     <main className="gamepage">
@@ -80,6 +119,9 @@ export default function GameBoard() {
         <h1 className="display">어디까지 했더라</h1>
         <p>슬롯마다 플레이 시간과 마지막으로 저장한 곳, 그날 본 것과 깬 것을 남겨둬요. 키보드 ↑↓로 고르고 Enter로 열어요.</p>
       </header>
+      {data?.nowPlaying && (
+        <p className="now-playing" role="status"><i aria-hidden /> 지금 <b>{data.nowPlaying.name}</b> 하는 중</p>
+      )}
 
       {owner && (
         <div className="film-owner">
@@ -91,6 +133,9 @@ export default function GameBoard() {
             <button className="btn-ghost" onClick={sync} disabled={busy}><RefreshCw size={14} aria-hidden /> {busy ? "가져오는 중…" : "Steam에서 가져오기"}</button>
             <button className="btn" onClick={() => setTool({ kind: "pin" })}><Pin size={14} aria-hidden /> 슬롯에 걸기</button>
             <button className="btn-ghost" onClick={() => setTool({ kind: "manual" })}><Plus size={14} aria-hidden /> 직접 추가</button>
+            <button className="btn-ghost" aria-pressed={!!data?.showPresence} onClick={togglePresence}>
+              {data?.showPresence ? <Eye size={14} aria-hidden /> : <EyeOff size={14} aria-hidden />} 지금 하는 게임 {data?.showPresence ? "공개 중" : "숨김"}
+            </button>
           </div>
         </div>
       )}
@@ -114,8 +159,8 @@ export default function GameBoard() {
                     <span className="slot-time">{playtime(s.minutes)}</span>
                     {s.lastSpot && <span className="slot-spot">{s.lastSpot}</span>}
                     <span className="slot-progress">
-                      <Blocks value={s.progress} />
-                      <small>{[STATUSES[s.status], s.progressLabel].filter(Boolean).join(", ")}</small>
+                      <Blocks value={shownProgress(s)} />
+                      <small>{[STATUSES[s.status], s.progressLabel, s.progress === undefined && s.ach ? `업적 ${s.ach.done}/${s.ach.total}` : ""].filter(Boolean).join(", ")}</small>
                     </span>
                   </span>
                 </button>
@@ -137,12 +182,17 @@ export default function GameBoard() {
                   {(current.lastSpot || current.progressLabel) && <p className="save-spot">{[current.progressLabel, current.lastSpot].filter(Boolean).join(", ")}</p>}
                 </div>
               </div>
+              <StoreBlock v={current} />
               <dl className="save-stats">
                 <div><dt>플레이 시간</dt><dd>{playtime(current.minutes)}</dd></div>
                 <div><dt>최근 2주</dt><dd>{current.recentMinutes ? playtime(current.recentMinutes) : "없음"}</dd></div>
                 <div><dt>마지막 플레이</dt><dd>{current.lastPlayed ? ago(current.lastPlayed) : "기록 없음"}</dd></div>
               </dl>
-              {current.progress !== undefined && <div className="save-progress"><Blocks value={current.progress} /><span>{current.progress}%</span></div>}
+              <PlatformLine v={current} />
+              {shownProgress(current) !== undefined && (
+                <div className="save-progress"><Blocks value={shownProgress(current)} />
+                  <span>{shownProgress(current)}%{current.progress === undefined && current.ach ? ` (업적 ${current.ach.done}/${current.ach.total})` : ""}</span></div>
+              )}
 
               {owner && !current.example && (
                 <div className="film-actions">
@@ -154,31 +204,13 @@ export default function GameBoard() {
                 </div>
               )}
 
+              <AchievementPanel v={current} />
+              <StatsTable v={current} />
+
               <h3 className="save-h">플레이 일지</h3>
-              {!notes.length && <p className="hint">아직 이 게임의 메모가 없어요.{owner && !current.example ? " '메모 쓰기'로 첫 메모를 남겨보세요." : ""}</p>}
+              {!log.length && <p className="hint">아직 이 게임의 메모가 없어요.{owner && !current.example ? " '메모 쓰기'로 첫 메모를 남겨보세요." : ""}</p>}
               <ol className="log">
-                {notes.map((n) => (
-                  <li key={n.id}>
-                    <span className="log-meta">{day(n.date)}{n.hours ? ` · +${n.hours}h` : ""}{n.example ? " · 예시" : ""}</span>
-                    <p>{n.text}</p>
-                    {n.shots.length > 0 && (
-                      <div className="shots">
-                        {n.shots.map((id) => (
-                          <button key={id} onClick={() => setShot(id)} aria-label="스크린샷 크게 보기">
-                            <img src={shotUrl(id)} alt="" loading="lazy" />
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {owner && !n.example && (
-                      <span className="log-tools">
-                        <button className="icon-btn" onClick={() => setTool({ kind: "note", slot: current, note: n })} aria-label="메모 고치기"><Pencil size={13} /></button>
-                        <button className="icon-btn danger" onClick={() => removeNote(n)} onBlur={() => setConfirm(null)} data-armed={confirm === n.id ? "" : undefined}
-                          aria-label={confirm === n.id ? "한 번 더 누르면 지워져요" : "메모 지우기"} title={confirm === n.id ? "한 번 더 누르면 지워져요" : "메모 지우기"}><Trash2 size={13} /></button>
-                      </span>
-                    )}
-                  </li>
-                ))}
+                {log.map((row) => row.k === "ach" ? <li key={`a-${row.a.id}`} className="log-row-ach"><UnlockRow a={row.a} /></li> : renderNote(row.n))}
               </ol>
             </motion.section>
           </AnimatePresence>
