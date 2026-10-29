@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "frames": "node scripts/count-frames.mjs",
     "hash-password": "node scripts/hash-password.mjs",
-    "export-preview": "bash scripts/export-preview.sh"
+    "export-preview": "bash scripts/export-preview.sh",
+    "apochill": "node integrations/apochill/run.mjs"
   },
   "dependencies": {
     "framer-motion": "^11.18.2",

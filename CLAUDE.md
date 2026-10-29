@@ -37,6 +37,7 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `lib/files.ts` | server-only file storage (`data/music/`, `data/shots/`), audio/image sniffing; swap with `lib/store.ts` for deployment |
 | `lib/tmdb.ts` | server-only TMDB client (`TMDB_API_KEY` in `.env.local`); only `/api/tmdb` (owner only) calls it |
 | `app/api/*` | visit, auth, events, guestbook, rooms, admin, movies (+ import), tmdb, music (+ `file/[id]` with Range), games (sync, library, slots, notes, shots, settings) |
+| `integrations/apochill/` | LOCAL-ONLY overlay on a separate apochill-kit checkout (`npm run apochill`): proxy to 0zong, playlist merge, speech-bubble hook. apochill has no reuse license: never copy its files here or deploy |
 | `lib/store.ts` | the only storage layer (JSON file `data/db.json`) |
 | `lib/auth.ts` | owner check (scrypt), signed HTTP-only cookie |
 | `lib/client.ts` | browser API; `NEXT_PUBLIC_DEMO=1` switches to localStorage |
