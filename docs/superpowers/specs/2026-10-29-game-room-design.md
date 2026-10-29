@@ -51,3 +51,42 @@ Steam 업적 진행률, 방문자 댓글, 날짜별 Steam 플레이 시간(Steam
 
 Steam 흉내 로컬 서버로 가져오기·비공개 안내·6시간 갱신. curl: 403/400/415/413, 공개 응답에 전체 목록 없음.
 Playwright: 걸기 → 메모·스크린샷 → 키보드 선택·열기, 데스크톱·모바일 스크린샷. `tsc`, `build`, `export-preview`.
+
+---
+
+# 2단계: Steam에서 가져올 수 있는 것 전부
+
+2026-10-29 · 승인: 소유자 (채팅, "가져올 수 있는것들 다 가져와서 붙여줘")
+
+## 가져오는 것 (슬롯에 건 Steam 게임만, 서버에서)
+
+| 정보 | API | 저장 |
+|---|---|---|
+| 플랫폼별 시간 (Windows/Mac/Linux/Deck) | `GetOwnedGames` (이미 부름) | SteamGame에 필드 추가 |
+| 업적 달성·달성 시각 | `ISteamUserStats/GetPlayerAchievements/v1` (l=koreana) | `games.details[appid].achievements` |
+| 업적 이름·설명·아이콘·숨김, 통계 이름 | `ISteamUserStats/GetSchemaForGame/v2` (l=koreana) | 같은 곳 |
+| 업적 전 세계 달성률 | `ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2` | 같은 곳 |
+| 게임별 통계 | `ISteamUserStats/GetUserStatsForGame/v2` | `details[appid].stats` (이름 있는 것만, 최대 8개) |
+| 소개·장르·출시일·개발사 | 상점 `appdetails` (l=korean, cc=kr) | `details[appid].store` |
+| 지금 플레이 중 | `ISteamUser/GetPlayerSummaries/v2` | `games.presence` |
+
+- 갱신: "Steam에서 가져오기", 6시간 지난 자동 갱신, 슬롯에 걸 때(그 게임만, 뒤에서). 항목별 실패는 그 항목만 비우고
+  나머지는 저장. 게임마다 순서대로 요청(Steam에 부담 주지 않게).
+- 아이콘 주소는 Steam CDN 호스트만 통과(`*.steamstatic.com`, `steamcdn-a.akamaihd.net`), 아니면 버린다.
+- 숨김 업적은 달성 전까지 이름·설명 대신 "숨겨진 업적".
+- 지금 플레이 중: `games.settings.showPresence`가 켜져 있을 때만(기본 꺼짐) 2분마다 갱신, 10분 넘은 정보는 안 보냄.
+  게임 이름만 공개(온라인 상태 등은 저장하지 않음). `STEAM_STORE_BASE`는 테스트용.
+
+## 화면
+
+- 슬롯 진행률: 주인이 적은 진행률이 없고 업적이 있으면 업적 달성률로 채우고 "업적 34/52"로 표시.
+- 세이브 상세: 장르·출시일·개발사와 짧은 소개, 플랫폼별 시간(0 아닌 것), 업적 요약과 희귀 업적 3개(아이콘, 이름,
+  전 세계 달성률), "업적 전체 보기"(달성한 것 먼저, 날짜와 달성률), 통계 표.
+- 플레이 일지: 직접 쓴 메모와 최근 업적 달성(최대 20개)을 날짜순으로 섞음. 업적 줄은 🏆 대신 아이콘 + "업적".
+- 지금 플레이 중: 켜져 있으면 `/game` 머리와 게임 서랍에 "지금 ○○ 하는 중" 한 줄(램프 색 점 하나).
+  주인 막대에 켜기/끄기.
+
+## 검증
+
+Steam·상점 흉내 서버에 업적·스키마·전 세계 달성률·통계·상점·요약 응답 추가. 통계 없는 게임(400), 업적 없는 게임,
+숨김 업적, CDN 아닌 아이콘 주소, 플레이 중 끄기/켜기/오래된 정보를 확인. Playwright 스크린샷.
