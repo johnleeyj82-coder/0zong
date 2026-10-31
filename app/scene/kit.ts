@@ -84,3 +84,27 @@ export const poster = (w: number, h: number, x: number, y: number, z: number, co
   { kind: "box", size: [w + 0.06, h + 0.06, 0.03], at: [x, y, z], color: C.black, rot: [0, rotY, 0] },
   { kind: "box", size: [w, h, 0.035], at: [x, y, z], color, rot: [0, rotY, 0], glow: color, glowI: 0.08 },
 ];
+
+/* ---------- small props that make a room feel lived in ---------- */
+/** A string of warm bulbs from a to b (with a little sag). */
+export const stringLights = (a: Vec3, b: Vec3, n = 14, sag = 0.12): Part[] =>
+  Array.from({ length: n }, (_, i) => {
+    const t = i / (n - 1);
+    const y = a[1] + (b[1] - a[1]) * t - Math.sin(t * Math.PI) * sag;
+    return ball(0.022, a[0] + (b[0] - a[0]) * t, y, a[2] + (b[2] - a[2]) * t, C.bulb, { glow: i % 3 ? C.bulb : "#ffc27a", glowI: 2.4 });
+  });
+
+/** A short stack of books lying flat. */
+export const bookStack = (x: number, y: number, z: number, n = 3): Part[] =>
+  Array.from({ length: n }, (_, i) =>
+    box(0.24 - i * 0.02, 0.04, 0.17 - i * 0.01, x + (i % 2 ? 0.015 : -0.01), y + i * 0.04, z, ["#7a3b2c", "#2f4f6b", "#c9a24a", "#5a6b3a"][i % 4], { rot: [0, (i - 1) * 0.15, 0] }));
+
+export const mug = (x: number, y: number, z: number, color = C.cream): Part[] => [
+  cyl(0.04, 0.09, x, y, z, color), cyl(0.034, 0.005, x, y + 0.088, z, "#3a2416"),
+];
+
+/** A wall frame (rotY turns it to face into the room). */
+export const frame = (w: number, h: number, x: number, y: number, z: number, color: string, rotY = 0): Part[] => [
+  { kind: "box", size: [w + 0.04, h + 0.04, 0.025], at: [x, y, z], color: C.woodLight, rot: [0, rotY, 0] },
+  { kind: "box", size: [w, h, 0.03], at: [x, y, z], color, rot: [0, rotY, 0] },
+];

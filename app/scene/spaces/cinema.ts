@@ -1,4 +1,4 @@
-import { ball, box, bulb, C, cyl, plant, type Space } from "../kit";
+import { ball, bookStack, box, bulb, C, cyl, frame, mug, plant, poster, stringLights, type Space } from "../kit";
 
 const H = Math.PI / 2;
 
@@ -85,6 +85,21 @@ export const cinema: Space = {
         }),
       ],
     },
+    { key: "lights", at: [0, 0, -2.62], parts: stringLights([-3.0, 2.68, 0.05], [3.0, 2.68, 0.05], 20, 0.1) },
+    { key: "speakers", at: [0, 0, -2.4], parts: [
+      box(0.32, 1.05, 0.3, -2.0, 0, 0, C.black), cyl(0.1, 0.02, -2.0, 0.7, 0.16, "#2a2a2e", { rot: [Math.PI / 2, 0, 0] }), cyl(0.05, 0.02, -2.0, 0.95, 0.16, "#2a2a2e", { rot: [Math.PI / 2, 0, 0] }),
+      box(0.32, 1.05, 0.3, 2.0, 0, 0, C.black), cyl(0.1, 0.02, 2.0, 0.7, 0.16, "#2a2a2e", { rot: [Math.PI / 2, 0, 0] }), cyl(0.05, 0.02, 2.0, 0.95, 0.16, "#2a2a2e", { rot: [Math.PI / 2, 0, 0] })] },
+    { key: "movie-posters", at: [-3.13, 0, 0.6], rotY: Math.PI / 2, parts: [
+      ...poster(0.55, 0.8, -0.35, 1.7, 0, "#a83a2c"), ...poster(0.55, 0.8, 0.35, 1.7, 0, "#1f3d5c"), ...poster(0.55, 0.8, 1.05, 1.7, 0, "#d8b04a")] },
+    { key: "sofa-extras", at: [0, 0, 0.35], rotY: Math.PI, parts: [
+      box(0.42, 0.36, 0.12, -0.7, 0.5, -0.2, "#b8823a", { rot: [-0.2, 0.2, 0] }), box(0.42, 0.36, 0.12, 0.7, 0.5, -0.2, "#8a3b3a", { rot: [-0.2, -0.15, 0] }),
+      box(0.6, 0.03, 0.9, 0.35, 0.56, 0.05, "#c8b89a", { rot: [0, 0.2, 0.05] })] },
+    { key: "lp-crate", at: [-2.45, 0, -0.35], parts: [box(0.42, 0.32, 0.36, 0, 0, 0, C.woodLight),
+      ...Array.from({ length: 9 }, (_, i) => box(0.31, 0.31, 0.008, 0, 0.05, -0.13 + i * 0.032, ["#1a1a1a", "#c2452f", "#2d4f7a", "#e0c070"][i % 4], { rot: [-0.15, 0, 0] }))] },
+    { key: "bar-stools", at: [2.35, 0, -0.7], parts: [0, 0.6].flatMap((dz) => [cyl(0.17, 0.05, 0, 0.7, dz, C.leather), cyl(0.025, 0.7, 0, 0, dz, C.metal), cyl(0.15, 0.02, 0, 0.25, dz, C.metal)]) },
+    { key: "popcorn", at: [-1.5, 0, 0.45], parts: [cyl(0.06, 0.13, 0.12, 0.53, -0.08, "#c2452f", { r2: 0.075 }), ...[0, 1, 2, 3].map((i) => ball(0.022, 0.1 + (i % 2) * 0.03, 0.68, -0.08 + (i - 1.5) * 0.02, "#f5e8c8"))] },
+    { key: "remote", at: [0, 0, 0.35], parts: [box(0.05, 0.02, 0.16, 0.6, 0.47, -0.35, "#1d1d22")] },
+    { key: "cinema-shelf", at: [-2.97, 0, -2.2], rotY: Math.PI / 2, parts: [...bookStack(0, 0.62, 0, 3), ...mug(0.3, 0.62, 0.05)] },
     {
       key: "floor-lamp", at: [-2.55, 0, 1.5],
       parts: [cyl(0.15, 0.03, 0, 0, 0, C.black), cyl(0.015, 1.42, 0, 0.03, 0, C.black), cyl(0.2, 0.24, 0, 1.45, 0, C.cream, { r2: 0.13, opacity: 0.92, glow: C.bulb, glowI: 0.5 })],

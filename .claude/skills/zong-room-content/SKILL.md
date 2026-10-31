@@ -49,8 +49,10 @@ Tokens live in `app/globals.css`. Use only these:
 - The 3D house fills the screen. Rooms are data in `app/scene/spaces/<id>.ts` (things with placeholder parts or a GLB,
   doors, lamps, camera). Hobbies say which room they stand in (`space` in `ROOMS`).
 - Top left (`SpaceBar`): house title, room tabs, `서울 HH:MM · 날씨 온도`, view settings (quality; owner: weather pin).
-- Clicking an object shows its **caption card** (bottom left) without moving the camera: `방 · 취미` label, title,
-  desc, update, "열어보기" → the room drawer. The bed shows the time picker instead (this tab only).
+- Clicking a hobby object opens its **stage** (`app/stages/`): a full-screen scene with its own art direction and one
+  playful interaction (write ink strokes, scratch the record, a terminal you can type in, deal cards, shoot chess
+  squares...). Its records button opens the drawer body inside the scene. The camera never moves. The bed shows the
+  time picker card instead (this tab only). A new hobby needs its own scene, not a generic card.
 - Doors: hover label "○○으로", click → 0.3s dark blink → that room, camera starting at the door you came through.
 - About + lately and the guestbook are **panels** (right sheets) opened from the dock.
 

@@ -27,6 +27,7 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `app/components/RoomStage.tsx` | canvas or still photo (3D off), dark blink between rooms, hover label, hidden keyboard list of objects |
 | `app/components/SpaceBar.tsx` / `Caption.tsx` / `Panels.tsx` | top-left room tabs + time/weather + settings / selected object card (bed = time picker) / about + guestbook sheets |
 | `lib/env.ts` + `app/api/env` | Open-Meteo Seoul weather (30-min cache, `OPEN_METEO_BASE` for tests), time of day, owner weather pin |
+| `app/stages/` | each hobby's own full-screen scene (replaces the old caption card): `Stage.tsx` shell (records panel = drawer body, Esc, view/open tracking), `scenes/<Hobby>.tsx`, `stages.css` (scoped `.sc-<key>`), `sfx.ts` synthesized sounds |
 | `lib/activity.ts` + `app/api/activity` (+ `token`, `settings`) | Windows helper pings (Bearer token, sha256 only stored) → minutes per Seoul day × category; public view = categories + live category 3 min late (opt-in); owner view adds app names |
 | `public/tools/0zong-helper.ps1` | the Windows helper (PowerShell 5.1, ASCII only): foreground process name → allowlist → `{category, app}` every 30s |
 | `app/components/ActivityContext.tsx` / `Bubble.tsx` / `Today.tsx` / `HelperCard.tsx` | polling / speech bubble over the main-room desk (DOM, positioned by the canvas) / 오늘의 방 panel / owner's helper connect card in the dashboard |
@@ -58,6 +59,9 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 - The helper never reads window titles, documents or the screen; unknown programs and idle time are not sent. Visitors
   never see app names, and see the live category only when the owner opted in, 3 minutes late. The helper token is
   shown once and stored only as sha256; a new token replaces the old one.
+- Every hobby scene has its own art direction (ink, vinyl, film leader, VHS, book, CRT, terminal, felt, bar, board,
+  handheld); never fall back to a shared card. Scenes honor reduced motion (settled state), and the 3D canvas stops
+  drawing while one is open. Stage CSS class names are prefixed per scene (the drawer bodies own generic names).
 - drei `<Html>` renders nothing here (React 19 root): DOM over the canvas is normal React, moved by a `useFrame` projection.
 - Never store IP, user agent, or location. `skip` and `owner` modes send no events.
 - Password hash format `scrypt:<salt>:<hash>` — no `$` (dotenv expands it). Secrets only in `.env.local`.

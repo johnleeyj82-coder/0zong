@@ -1,68 +1,53 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import dynamic from "next/dynamic";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, BedDouble, X } from "lucide-react";
-import { spaceLabel, type RoomKey } from "../data";
+import { BedDouble, X } from "lucide-react";
 import { TIMES, timeWithRo, type TimeOfDay } from "@/lib/env";
 import { useRoom } from "./RoomContext";
 import { useScene } from "./SceneContext";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
+// Each hobby's scene (and its fonts, sounds and canvas code) loads only when an object is opened.
+const Stage = dynamic(() => import("../stages/Stage"), { ssr: false });
+
 /**
- * The card for the selected object. The camera does not move: the card appears beside the room.
- * A hobby gets its title, line and "열어보기"; the bed gets the time picker.
+ * What opens for the selected object (the camera does not move): a hobby opens its own full-screen scene,
+ * the bed opens the time picker card beside the room.
  */
 export default function Caption() {
   const { selected, select } = useScene();
-  const { rooms, drawer, panel, track } = useRoom();
-  const seen = useRef(new Set<string>());
-
-  // A hobby counts as viewed once its card has been on screen for 1.2s (once per visit).
-  useEffect(() => {
-    if (!selected || selected === "bed" || seen.current.has(selected)) return;
-    const t = setTimeout(() => { seen.current.add(selected); track("view", selected); }, 1200);
-    return () => clearTimeout(t);
-  }, [selected, track]);
+  const { drawer, panel } = useRoom();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (!selected) return;
+    if (selected !== "bed") return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape" && !drawer && !panel) select(null); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [selected, drawer, panel, select]);
 
-  const room = selected && selected !== "bed" ? rooms.find((r) => r.key === selected) : null;
   return (
-    <div className="caption-pos" aria-live="polite">
-      <AnimatePresence mode="wait">
-        {room && (
-          <motion.section key={room.key} className="caption lamp-card" aria-label={room.title}
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }} transition={{ duration: 0.45, ease: EASE }}>
-            <i /><i /><i /><i />
-            <button className="caption-x icon-btn" onClick={() => select(null)} aria-label="닫기"><X size={16} /></button>
-            <div className="caption-head">
-              <span className="icon-disc"><room.icon size={20} aria-hidden /></span>
-              <div>
-                <div className="count">{spaceLabel(room.space)} · {room.label}</div>
-                <h2>{room.title}</h2>
-              </div>
-            </div>
-            <p>{room.desc}</p>
-            <div className="update">{room.update}</div>
-            <OpenButton k={room.key} />
-          </motion.section>
-        )}
-        {selected === "bed" && <BedCard key="bed" />}
-      </AnimatePresence>
-    </div>
+    <>
+      {/* On <body>, so the scene covers the dock (the room's <main> is its own stacking context). */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {selected && selected !== "bed" && <Stage key="stage" k={selected} onClose={() => select(null)} />}
+        </AnimatePresence>,
+        document.body,
+      )}
+      <div className="caption-pos" aria-live="polite">
+        <AnimatePresence mode="wait">
+          {selected === "bed" && <BedCard key="bed" />}
+        </AnimatePresence>
+      </div>
+    </>
   );
 }
 
-function OpenButton({ k }: { k: RoomKey }) {
-  const { openDrawer } = useRoom();
-  return <button className="caption-open" onClick={() => openDrawer(k)}>열어보기 <ArrowUpRight size={15} aria-hidden /></button>;
-}
 
 const ORDER: TimeOfDay[] = ["dawn", "morning", "day", "sunset", "night"];
 

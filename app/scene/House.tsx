@@ -16,7 +16,7 @@ const ACCENT = "#e9b872";
 const WALL_T = 0.1;
 
 export default function House({ quality }: { quality: Exclude<Quality, "off"> }) {
-  const { space: id, cameFrom, select, hover, degrade, qualitySetting } = useScene();
+  const { space: id, cameFrom, select, selected, hover, degrade, qualitySetting } = useScene();
   const space = HOUSE[id];
   const flash = useRef(0);
   const shadows = quality === "high";
@@ -27,6 +27,8 @@ export default function House({ quality }: { quality: Exclude<Quality, "off"> })
       shadows={shadows}
       gl={{ antialias: quality !== "low", powerPreference: "high-performance", stencil: true }}
       camera={{ fov: 42, near: 0.1, far: 80, position: space.view.pos }}
+      // A hobby's scene covers the whole screen: stop drawing the room underneath until it closes.
+      frameloop={selected && selected !== "bed" ? "never" : "always"}
       onPointerMissed={() => select(null)}
       aria-label="0zong의 방 3D 장면. 끌어서 둘러보고, 물건을 누르면 그 취미가 열려요."
     >
