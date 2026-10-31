@@ -46,6 +46,8 @@ export type Space = {
   doors: Door[];
   lamps: Lamp[];
   view: View;
+  /** Where the speech bubble floats (the owner's seat). */
+  bubble?: Vec3;
   /** Where the camera starts when you arrive through the door from that room. */
   from?: Partial<Record<SpaceId, View>>;
 };

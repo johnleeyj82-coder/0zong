@@ -1,6 +1,7 @@
 import type { Movie } from "./movies";
 import type { Track } from "./music";
 import type { EnvOverride } from "./env";
+import type { Category, Minutes } from "./activity";
 import type { GameDetails, GameSettings, Note, Presence, Shot, Slot, SteamSnapshot } from "./games";
 
 export type VisitMode = "named" | "anonymous";
@@ -38,8 +39,24 @@ export type DB = {
     presence?: Presence;
     settings?: GameSettings;
   };
+  /** The Windows helper: its token (hash only), what it last reported, and minutes per day. */
+  activity?: ActivityRecord;
   /** Site-wide settings the owner sets. */
   settings?: { envOverride?: EnvOverride };
 };
 
 export type Dashboard = { visitors: Visitor[]; interest: Record<string, number>; messages: Message[] };
+
+export type ActivityRecord = {
+  /** sha256 of the helper token; the token itself is shown once and never stored. */
+  tokenHash?: string;
+  tokenCreatedAt?: number;
+  publicLive?: boolean;
+  status?: { category: Category; app: string; at: number };
+  /** The last few minutes of pings, so visitors can be shown the past instead of the present. */
+  recent?: { category: Category; at: number }[];
+  /** Seoul date → minutes per category. */
+  days: Record<string, Minutes>;
+  /** Seoul date → app name → minutes (owner only). */
+  apps: Record<string, Record<string, { category: Category; minutes: number }>>;
+};

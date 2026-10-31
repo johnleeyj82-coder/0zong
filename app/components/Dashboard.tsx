@@ -5,6 +5,7 @@ import { getDashboard, logout } from "@/lib/client";
 import type { Dashboard as D, Visitor } from "@/lib/types";
 import { spaceLabel, ROOMS } from "../data";
 import { ago } from "./Guestbook";
+import HelperCard from "./HelperCard";
 
 const TYPE_LABEL: Record<string, string> = { enter: "들어옴", view: "봄", dock: "바로가기", open: "열어봄", guestbook: "방명록 씀", score: "기록 세움", move: "방 이동" };
 const roomLabel = (k?: string) => ROOMS.find((r) => r.key === k)?.label ?? spaceLabel(k);
@@ -37,6 +38,7 @@ export default function Dashboard({ onClose, onLogout }: { onClose?: () => void;
       {!data && !error && <p className="hint">불러오는 중…</p>}
       {data && (
         <div className="dash-grid">
+          <HelperCard />
           <section className="dash-card">
             <h3>관심 받은 방</h3>
             <p className="hint">본 것 1점, 열어본 것 2점, 바로가기와 기록 1점</p>

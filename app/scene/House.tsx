@@ -7,6 +7,7 @@ import { OrbitControls, PerformanceMonitor, useCursor } from "@react-three/drei"
 import * as THREE from "three";
 import { ROOMS } from "../data";
 import { useScene, type Quality } from "../components/SceneContext";
+import { bubbleAnchor } from "../components/Bubble";
 import { HOUSE } from "./spaces";
 import { C, type Door, type Part, type Space, type Thing } from "./kit";
 import { lookFor, type Look } from "./look";
@@ -38,6 +39,7 @@ export default function House({ quality }: { quality: Exclude<Quality, "off"> })
         {space.window && <Outside space={space} flash={flash} />}
         {space.things.map((t) => <ThingView key={t.key} t={t} shadows={shadows} />)}
         {space.doors.map((d) => <DoorView key={d.id} d={d} />)}
+        {space.bubble && <BubbleAnchor at={space.bubble} />}
       </group>
     </Canvas>
   );
@@ -383,4 +385,19 @@ function DoorView({ d }: { d: Door }) {
       <mesh position={[0.36, 1.0, 0.1]}><sphereGeometry args={[0.035, 16, 12]} /><meshStandardMaterial color="#c9a24a" metalness={0.7} roughness={0.3} /></mesh>
     </group>
   );
+}
+
+/* ---------- speech bubble over the owner's seat ---------- */
+// The bubble itself is ordinary DOM (RoomStage). Here we only move it to where its 3D point lands on screen each frame.
+function BubbleAnchor({ at }: { at: [number, number, number] }) {
+  const v = useMemo(() => new THREE.Vector3(), []);
+  useEffect(() => () => { if (bubbleAnchor.el) bubbleAnchor.el.style.visibility = "hidden"; }, []);
+  useFrame(({ camera, size }) => {
+    const el = bubbleAnchor.el;
+    if (!el) return;
+    v.set(...at).project(camera);
+    el.style.transform = `translate(${((v.x + 1) / 2) * size.width}px, ${((1 - v.y) / 2) * size.height}px)`;
+    el.style.visibility = v.z < 1 ? "visible" : "hidden";
+  });
+  return null;
 }

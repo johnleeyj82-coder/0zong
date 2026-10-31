@@ -10,6 +10,7 @@ export const main: Space = {
   floor: "#5a3e2a",
   window: { x: 0, y: 0.95, w: 2.6, h: 1.55 },
   view: { pos: [0, 2.6, 6.4], target: [0, 1, -0.6] },
+  bubble: [0, 1.75, -1.25],
   from: {
     cinema: { pos: [-2.3, 2.4, 5.7], target: [-0.2, 1, -0.6] },
     bedroom: { pos: [2.3, 2.4, 5.7], target: [0.2, 1, -0.6] },

@@ -27,6 +27,9 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `app/components/RoomStage.tsx` | canvas or still photo (3D off), dark blink between rooms, hover label, hidden keyboard list of objects |
 | `app/components/SpaceBar.tsx` / `Caption.tsx` / `Panels.tsx` | top-left room tabs + time/weather + settings / selected object card (bed = time picker) / about + guestbook sheets |
 | `lib/env.ts` + `app/api/env` | Open-Meteo Seoul weather (30-min cache, `OPEN_METEO_BASE` for tests), time of day, owner weather pin |
+| `lib/activity.ts` + `app/api/activity` (+ `token`, `settings`) | Windows helper pings (Bearer token, sha256 only stored) → minutes per Seoul day × category; public view = categories + live category 3 min late (opt-in); owner view adds app names |
+| `public/tools/0zong-helper.ps1` | the Windows helper (PowerShell 5.1, ASCII only): foreground process name → allowlist → `{category, app}` every 30s |
+| `app/components/ActivityContext.tsx` / `Bubble.tsx` / `Today.tsx` / `HelperCard.tsx` | polling / speech bubble over the main-room desk (DOM, positioned by the canvas) / 오늘의 방 panel / owner's helper connect card in the dashboard |
 | `app/components/RoomContext.tsx` | visitor identity/mode, event queue + flush, room overrides, drawer/panel/dashboard state |
 | `app/components/Opening.tsx` | lights-on intro + guestbook gate + owner password reveal |
 | `app/components/IconBar.tsx` | fixed dock: hobbies grouped by room (clicking one in another room walks there), about, guestbook |
@@ -52,6 +55,10 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 - Outside the window draws only through the window's stencil (the rooms have no ceiling).
 - The bed's time is per tab and never sent anywhere; the owner's weather pin is for everyone.
 - UI on top of the canvas is never gated on the 3D loading; without WebGL the still photo + dock still work.
+- The helper never reads window titles, documents or the screen; unknown programs and idle time are not sent. Visitors
+  never see app names, and see the live category only when the owner opted in, 3 minutes late. The helper token is
+  shown once and stored only as sha256; a new token replaces the old one.
+- drei `<Html>` renders nothing here (React 19 root): DOM over the canvas is normal React, moved by a `useFrame` projection.
 - Never store IP, user agent, or location. `skip` and `owner` modes send no events.
 - Password hash format `scrypt:<salt>:<hash>` — no `$` (dotenv expands it). Secrets only in `.env.local`.
 - Framer-motion elements that need centering use `style={{ x: "-50%" }}` (framer overwrites CSS transforms).
@@ -68,7 +75,8 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 
 Done: 3D house phase 1 (spec `docs/superpowers/specs/2026-10-29-3d-room-design.md`): three rooms with placeholder
 furniture, doors, captions → drawers, bed time picker, Seoul time + weather, quality presets + still fallback. The old
-scroll hero and its 202 frames are gone. Also: movie, music, game rooms, guestbook, tracking, owner mode, demo export.
+scroll hero and its 202 frames are gone. Phase 2 (2026-10-31): Windows helper + token, speech bubble, 오늘의 방
+(the .ps1 was written without a Windows machine to run it on: first real run is the owner's). Also: movie, music, game rooms, guestbook, tracking, owner mode, demo export.
 
 ## Backlog (rough priority)
 
@@ -76,5 +84,5 @@ scroll hero and its 202 frames are gone. Also: movie, music, game rooms, guestbo
 2. Storage for deployment: swap `lib/store.ts` to Supabase/Postgres before hosting on Vercel.
 3. Playable rooms: tetris 2-minute mode with leaderboard (`score` events), poker tutorial → AI → realtime tables,
    variant chess with stages.
-5. 3D phases 2–4: Windows helper + 오늘의 방, Tripo models (`npm run models`) + character + events, owner arrange mode.
+5. 3D phases 3–4: Tripo models (`npm run models`) + character + events, owner arrange mode.
 6. Mobile polish of the tour framing; Lighthouse/accessibility pass; deploy.

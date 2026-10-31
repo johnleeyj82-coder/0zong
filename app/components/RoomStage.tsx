@@ -6,6 +6,7 @@ import { DEMO } from "@/lib/client";
 import { HOUSE } from "../scene/spaces";
 import { useRoom } from "./RoomContext";
 import { useScene } from "./SceneContext";
+import { SpeechBubble } from "./Bubble";
 
 // three.js is only loaded here, in the browser, on "/".
 const House = dynamic(() => import("../scene/House"), { ssr: false, loading: () => <p className="stage-loading">방을 불러오는 중이에요…</p> });
@@ -22,7 +23,10 @@ export default function RoomStage() {
           <p className="stage-note">3D를 끈 화면이에요. {spaceLabel(space)}의 물건은 아래 독에서 열 수 있어요.</p>
         </div>
       ) : quality ? (
-        <House quality={quality} />
+        <>
+          <House quality={quality} />
+          <SpeechBubble />
+        </>
       ) : null}
       <div className="vignette" />
       <div className="stage-dark" data-on={dark || undefined} aria-hidden />

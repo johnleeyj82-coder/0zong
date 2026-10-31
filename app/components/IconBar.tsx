@@ -1,12 +1,12 @@
 "use client";
 import { Fragment } from "react";
 import { motion } from "framer-motion";
-import { BarChart3, Info, MessageSquareText } from "lucide-react";
+import { BarChart3, CalendarClock, Info, MessageSquareText } from "lucide-react";
 import { SPACES } from "../data";
 import { useRoom } from "./RoomContext";
 import { useScene } from "./SceneContext";
 
-/** Fixed dock: every hobby grouped by the room it stands in, then the about page, guestbook and (owner) the dashboard. */
+/** Fixed dock: every hobby grouped by the room it stands in, then 오늘의 방, the about page, guestbook and (owner) the dashboard. */
 export default function IconBar() {
   const { rooms, track, owner, name, mode, setDashboard, setPanel, phase } = useRoom();
   const { select, selected } = useScene();
@@ -28,6 +28,9 @@ export default function IconBar() {
         </Fragment>
       ))}
       <span className="dock-sep" aria-hidden />
+      <button className="dock-btn" onClick={() => setPanel("today")} aria-label="오늘의 방">
+        <CalendarClock size={19} aria-hidden /><span className="dock-tip">오늘의 방</span>
+      </button>
       <button className="dock-btn" onClick={() => setPanel("about")} aria-label="이 집 이야기">
         <Info size={19} aria-hidden /><span className="dock-tip">이 집 이야기</span>
       </button>

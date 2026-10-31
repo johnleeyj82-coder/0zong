@@ -4,12 +4,13 @@
 import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { DB, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
+import type { ActivityRecord, DB, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
 import type { Movie } from "./movies";
 import type { Track } from "./music";
 import type { GameDetails, GameSettings, Note, Presence, Shot, Slot, SteamSnapshot } from "./games";
 import { EXAMPLE_MOVIES } from "./movies.example";
-import type { EnvOverride } from "./env";
+import { seoulDate, type EnvOverride } from "./env";
+import { KEEP_DAYS, MAX_CREDIT_MS, type Category } from "./activity";
 
 const FILE = process.env.ROOM_DB_FILE || path.join(process.cwd(), "data", "db.json");
 const MAX_EVENTS_PER_VISITOR = 2000;
@@ -272,6 +273,53 @@ export function setEnvOverride(o: EnvOverride): Promise<EnvOverride> {
   return mutate((db) => {
     db.settings = { ...db.settings, envOverride: o };
     return o;
+  });
+}
+
+/* ---------- activity (Windows helper) ---------- */
+const activityOf = (db: DB) => (db.activity ??= { days: {}, apps: {} });
+
+export async function getActivity(): Promise<ActivityRecord> {
+  return (await read()).activity ?? { days: {}, apps: {} };
+}
+
+/** Stores a new token hash (null disconnects the helper and forgets what it last said). */
+export function setHelperToken(hash: string | null): Promise<void> {
+  return mutate((db) => {
+    const a = activityOf(db);
+    if (hash) { a.tokenHash = hash; a.tokenCreatedAt = Date.now(); }
+    else { delete a.tokenHash; delete a.tokenCreatedAt; }
+    delete a.status; delete a.recent;
+  });
+}
+
+export function setPublicLive(on: boolean): Promise<boolean> {
+  return mutate((db) => { activityOf(db).publicLive = on; return on; });
+}
+
+/**
+ * One helper ping. The time since the previous ping (at most a minute) is counted for this ping's category,
+ * so a PC that slept for hours adds nothing. Pings closer than 10s apart only update the status.
+ */
+export function recordPing(category: Category, app: string, now = Date.now()): Promise<void> {
+  return mutate((db) => {
+    const a = activityOf(db);
+    const gap = a.status ? now - a.status.at : 30_000;
+    if (gap >= 10_000) {
+      const min = Math.min(gap, MAX_CREDIT_MS) / 60_000;
+      const date = seoulDate(now);
+      const day = (a.days[date] ??= {});
+      day[category] = Math.round(((day[category] ?? 0) + min) * 100) / 100;
+      const apps = (a.apps[date] ??= {});
+      const row = (apps[app] ??= { category, minutes: 0 });
+      row.category = category; row.minutes = Math.round((row.minutes + min) * 100) / 100;
+      // Forget anything older than KEEP_DAYS.
+      const cutoff = seoulDate(now - KEEP_DAYS * 86_400_000);
+      for (const d of Object.keys(a.days)) if (d < cutoff) delete a.days[d];
+      for (const d of Object.keys(a.apps)) if (d < cutoff) delete a.apps[d];
+    }
+    a.status = { category, app, at: now };
+    a.recent = [...(a.recent ?? []).filter((r) => now - r.at < 15 * 60_000), { category, at: now }];
   });
 }
 

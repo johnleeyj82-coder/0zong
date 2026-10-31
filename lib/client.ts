@@ -7,7 +7,8 @@ import type { Track } from "./music";
 import { buildView, EXAMPLE_NOTES, EXAMPLE_SLOTS, type GamesPayload, type Note, type Slot, type SteamGame } from "./games";
 import type { TmdbHit, TmdbMovie } from "./tmdb.types";
 import { EXAMPLE_MOVIES } from "./movies.example";
-import { compose, openMeteoUrl, parseOpenMeteo, type EnvOverride, type EnvPayload } from "./env";
+import { compose, openMeteoUrl, parseOpenMeteo, seoulDate, type EnvOverride, type EnvPayload } from "./env";
+import { exampleActivity, lastWeek, type ActivityOwner, type ActivityPublic } from "./activity";
 
 export const DEMO = process.env.NEXT_PUBLIC_DEMO === "1";
 const DEMO_OWNER = "0zong";
@@ -369,4 +370,31 @@ export async function setEnvOverride(override: EnvOverride): Promise<Result<EnvP
   if (!demoRead().owner) return { ok: false, error: "권한이 없어요." };
   try { localStorage.setItem(DEMO_ENV, JSON.stringify(override)); } catch { /* storage blocked */ }
   return { ok: true, data: await demoEnv() };
+}
+
+/* ---------- PC activity (Windows helper) ---------- */
+const NO_HELPER_DEMO = "미리보기에는 서버가 없어서 PC 도우미를 연결할 수 없어요.";
+export type ActivityPayload = ActivityPublic | (ActivityOwner & { owner: true });
+export const isOwnerActivity = (a: ActivityPayload | null): a is ActivityOwner & { owner: true } => !!a && "owner" in a;
+
+export async function getActivity(): Promise<ActivityPayload | null> {
+  if (DEMO) return exampleActivity(lastWeek(Date.now(), seoulDate));
+  const r = await call<ActivityPayload>("/api/activity");
+  return r.ok ? r.data : null;
+}
+
+/** Owner only: a new helper token, shown once. */
+export async function newHelperToken(): Promise<Result<{ token: string }>> {
+  if (DEMO) return { ok: false, error: NO_HELPER_DEMO };
+  return call("/api/activity/token", { method: "POST" });
+}
+
+export async function disconnectHelper(): Promise<Result<unknown>> {
+  if (DEMO) return { ok: false, error: NO_HELPER_DEMO };
+  return call("/api/activity/token", { method: "DELETE" });
+}
+
+export async function setPublicLive(on: boolean): Promise<Result<{ publicLive: boolean }>> {
+  if (DEMO) return { ok: false, error: NO_HELPER_DEMO };
+  return call("/api/activity/settings", { method: "PUT", body: JSON.stringify({ publicLive: on }) });
 }

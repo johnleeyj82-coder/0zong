@@ -8,7 +8,7 @@ import type { EventType, RoomOverride, TrackEvent } from "@/lib/types";
 export type Mode = "named" | "anonymous" | "skip" | "owner";
 export type Phase = "dark" | "lights" | "gate" | "done";
 /** Side panels opened from the dock (the old sections below the hero). */
-export type Panel = "about" | "guestbook";
+export type Panel = "about" | "guestbook" | "today";
 
 type Saved = { id: string; name: string; mode: Mode };
 const STORE = "room.visitor";

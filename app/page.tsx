@@ -1,5 +1,6 @@
 import { RoomProvider } from "./components/RoomContext";
 import { SceneProvider } from "./components/SceneContext";
+import { ActivityProvider } from "./components/ActivityContext";
 import RoomStage from "./components/RoomStage";
 import SpaceBar from "./components/SpaceBar";
 import Caption from "./components/Caption";
@@ -14,16 +15,18 @@ export default function Page() {
   return (
     <RoomProvider>
       <SceneProvider>
-        <main className="home">
-          <RoomStage />
-          <SpaceBar />
-          <Caption />
-        </main>
-        <Opening />
-        <IconBar />
-        <RoomDrawer />
-        <Panels />
-        <DashboardOverlay />
+        <ActivityProvider>
+          <main className="home">
+            <RoomStage />
+            <SpaceBar />
+            <Caption />
+          </main>
+          <Opening />
+          <IconBar />
+          <RoomDrawer />
+          <Panels />
+          <DashboardOverlay />
+        </ActivityProvider>
       </SceneProvider>
     </RoomProvider>
   );

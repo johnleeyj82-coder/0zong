@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { ROOMS, SPACES } from "../data";
 import { DEMO } from "@/lib/client";
 import Guestbook from "./Guestbook";
+import Today from "./Today";
 import { useRoom, type Panel } from "./RoomContext";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
@@ -20,6 +21,7 @@ const FEED: { when: string; key: string; title: string; note: string }[] = [
 const HEAD: Record<Panel, { label: string; title: string }> = {
   about: { label: "About this room", title: "취미도, 공부도, 전부 이 집에." },
   guestbook: { label: "Guestbook", title: "다녀간 사람들" },
+  today: { label: "Today · 오늘의 방", title: "요즘 이 방에서 한 일" },
 };
 
 function About() {
@@ -82,7 +84,7 @@ export default function Panels() {
               <span className="label">{HEAD[panel].label}</span>
               <h2 id="panel-h" className="display">{HEAD[panel].title}</h2>
             </header>
-            {panel === "about" ? <About /> : <Guestbook />}
+            {panel === "about" ? <About /> : panel === "today" ? <Today /> : <Guestbook />}
           </motion.aside>
         </motion.div>
       )}
