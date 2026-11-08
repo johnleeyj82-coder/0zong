@@ -1,4 +1,11 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+/* The site is always dark: dark: utilities in Bklit components apply everywhere. */
+@custom-variant dark (&:where(*));
+
 /* Design tokens — the room at night: warm tungsten light, cream text, felt green, olive. Never pure black. */
+
 :root {
   --bg: #15100c;
   --bg-raise: #1e1712;
@@ -17,6 +24,7 @@
   color-scheme: dark;
 }
 
+@layer base {
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { background: var(--bg); }
 body {
@@ -29,6 +37,7 @@ body {
   overflow-x: hidden;
 }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+}
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
 .label {
@@ -368,3 +377,107 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .feed-open { text-align: left; font: inherit; }
 .feed-open:hover { color: var(--accent-hover); }
 .feed-empty { display: block !important; color: var(--text-dim); }
+
+/* Bklit UI chart tokens, tuned to the room: tungsten first, felt and olive second, cream text, hairline grid. */
+:root {
+  --background: var(--bg);
+  --foreground: var(--text);
+  --popover: #241b15;
+  --popover-foreground: var(--text);
+  --muted: rgba(243, 234, 219, 0.06);
+  --muted-foreground: var(--text-dim);
+  --chart-1: #e9b872;
+  --chart-2: #7fae93;
+  --chart-3: #a9ae8a;
+  --chart-4: #c9814f;
+  --chart-5: #f3eadb;
+  --chart-positive: #8cc3a3;
+  --chart-negative: #f2a48a;
+  --chart-background: var(--bg);
+  --chart-foreground: var(--text-body);
+  --chart-foreground-muted: var(--text-dim);
+  --chart-line-primary: var(--chart-1);
+  --chart-line-secondary: var(--chart-2);
+  --chart-crosshair: rgba(233, 184, 114, 0.6);
+  --chart-grid: rgba(243, 234, 219, 0.08);
+  --chart-brush-border: var(--chart-grid);
+  --chart-tooltip-background: var(--popover);
+  --chart-tooltip-foreground: var(--popover-foreground);
+  --chart-tooltip-muted: var(--muted-foreground);
+  --chart-marker-background: #2a211a;
+  --chart-marker-border: rgba(243, 234, 219, 0.2);
+  --chart-marker-foreground: var(--text);
+  --chart-label: var(--text-dim);
+  --chart-scale-mix: #2a221b;
+  --chart-scale-01: #2a221b;
+  --chart-scale-02: color-mix(in oklab, var(--chart-1) 35%, var(--chart-scale-mix));
+  --chart-scale-03: color-mix(in oklab, var(--chart-1) 55%, var(--chart-scale-mix));
+  --chart-scale-04: color-mix(in oklab, var(--chart-1) 78%, var(--chart-scale-mix));
+  --chart-scale-05: var(--chart-1);
+  --chart-scale-pattern-color: var(--bg);
+  --chart-indicator-color: var(--chart-1);
+  --chart-indicator-secondary-color: var(--bg);
+  --chart-marker-badge-background: var(--chart-1);
+  --chart-marker-badge-foreground: var(--accent-ink);
+  --chart-segment-background: rgba(243, 234, 219, 0.04);
+  --chart-segment-line: rgba(243, 234, 219, 0.2);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --font-sans: var(--body);
+  --font-mono: var(--mono);
+  --color-chart-line-primary: var(--chart-line-primary);
+  --color-chart-line-secondary: var(--chart-line-secondary);
+  --color-chart-brush-border: var(--chart-brush-border);
+  --color-chart-tooltip-background: var(--chart-tooltip-background);
+  --color-chart-tooltip-foreground: var(--chart-tooltip-foreground);
+  --color-chart-tooltip-muted: var(--chart-tooltip-muted);
+  --color-chart-scale-02: var(--chart-scale-02);
+  --color-chart-scale-03: var(--chart-scale-03);
+  --color-chart-scale-04: var(--chart-scale-04);
+  --color-chart-scale-05: var(--chart-scale-05);
+  --color-chart-segment-line: var(--chart-segment-line);
+  --color-chart-segment-background: var(--chart-segment-background);
+  --color-chart-marker-badge-foreground: var(--chart-marker-badge-foreground);
+  --color-chart-marker-badge-background: var(--chart-marker-badge-background);
+  --color-chart-indicator-secondary-color: var(--chart-indicator-secondary-color);
+  --color-chart-indicator-color: var(--chart-indicator-color);
+  --color-chart-scale-pattern-color: var(--chart-scale-pattern-color);
+  --chart-scale-05: var(--chart-scale-05);
+  --chart-scale-04: var(--chart-scale-04);
+  --chart-scale-03: var(--chart-scale-03);
+  --chart-scale-02: var(--chart-scale-02);
+  --color-chart-scale-01: var(--chart-scale-01);
+  --color-chart-scale-mix: var(--chart-scale-mix);
+  --color-chart-label: var(--chart-label);
+  --color-chart-marker-foreground: var(--chart-marker-foreground);
+  --color-chart-marker-border: var(--chart-marker-border);
+  --color-chart-marker-background: var(--chart-marker-background);
+  --chart-tooltip-muted: var(--chart-tooltip-muted);
+  --chart-tooltip-foreground: var(--chart-tooltip-foreground);
+  --chart-tooltip-background: var(--chart-tooltip-background);
+  --chart-brush-border: var(--chart-brush-border);
+  --color-chart-grid: var(--chart-grid);
+  --color-chart-crosshair: var(--chart-crosshair);
+  --chart-line-secondary: var(--chart-line-secondary);
+  --chart-line-primary: var(--chart-line-primary);
+  --color-chart-foreground-muted: var(--chart-foreground-muted);
+  --color-chart-foreground: var(--chart-foreground);
+  --color-chart-background: var(--chart-background);
+  --color-chart-negative: var(--chart-negative);
+  --color-chart-positive: var(--chart-positive);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+}
+
