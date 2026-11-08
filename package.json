@@ -12,8 +12,10 @@
     "export-preview": "bash scripts/export-preview.sh"
   },
   "dependencies": {
+    "animejs": "^4.5.0",
     "framer-motion": "^11.18.2",
     "lucide-react": "^1.61.0",
+    "motion": "^14.10.1",
     "next": "^15.5.28",
     "react": "19.0.0",
     "react-dom": "19.0.0",
