@@ -35,6 +35,16 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `lib/store.ts` | the only storage layer (JSON file `data/db.json`) |
 | `lib/auth.ts` | owner check (scrypt), signed HTTP-only cookie |
 | `lib/client.ts` | browser API; `NEXT_PUBLIC_DEMO=1` switches to localStorage |
+| `components/charts/` | Bklit UI charts (shadcn registry `@bklit`): area, bar, line, heatmap. Import from `@/components/charts` |
+
+## Libraries
+
+- Animation: `framer-motion` (existing code), `motion` v14 (`import { motion } from "motion/react"` for new code), `animejs` v4
+  (`import { animate, stagger } from "animejs"`). Motion AI Kit for Claude Code: `.claude/skills/motion`, `.mcp.json`.
+- Tailwind v4 is loaded **without preflight** (theme + utilities only) so the site's own base styles stay; the site's
+  resets live in `@layer base` so utilities can override them inside chart components. `dark:` always applies.
+- Chart colors are the `--chart-*` tokens in `app/globals.css`, tuned to the room palette. Don't paste Bklit's default
+  purple/light values back in.
 
 ## Invariants (don't break these)
 
