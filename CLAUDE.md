@@ -27,8 +27,11 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `app/components/RoomContext.tsx` | visitor identity/mode, event queue + flush, room overrides, drawer/dashboard state |
 | `app/components/Opening.tsx` | lights-on intro + guestbook gate + owner password reveal |
 | `app/components/IconBar.tsx` | fixed dock with tour progress |
-| `app/rooms/bodies.tsx` | per-room drawer content (all example data for now) |
-| `app/api/*` | visit, auth, events, guestbook, rooms, admin |
+| `app/rooms/schema.ts` | what a record means per room: field labels, owner form, one-line summary for the feed |
+| `app/rooms/bodies.tsx` | per-room drawer views, rendered from that room's records |
+| `app/rooms/EntryEditor.tsx` | owner-only add / edit / delete of records, "예시 모두 지우기" |
+| `lib/examples.ts` | seeded example records (`example: true`), served until the owner first edits |
+| `app/api/*` | visit, auth, events, guestbook, rooms, entries (owner writes), admin |
 | `lib/store.ts` | the only storage layer (JSON file `data/db.json`) |
 | `lib/auth.ts` | owner check (scrypt), signed HTTP-only cookie |
 | `lib/client.ts` | browser API; `NEXT_PUBLIC_DEMO=1` switches to localStorage |
@@ -41,16 +44,23 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 - Never store IP, user agent, or location. `skip` and `owner` modes send no events.
 - Password hash format `scrypt:<salt>:<hash>` — no `$` (dotenv expands it). Secrets only in `.env.local`.
 - Framer-motion elements that need centering use `style={{ x: "-50%" }}` (framer overwrites CSS transforms).
-- Example data stays labeled "예시" until replaced with real records.
+- Example data stays labeled "예시" until replaced with real records. Records carry `example: true`; editing one drops the flag.
+- Room records (`Entry`) are the single source for drawer bodies, the Lately feed and each room's update line —
+  don't hardcode records in components.
 
 ## Status (2026-10-26)
 
 Done: scroll hero with 202 frames rendered from the owner's room image (`public/frames`), icon dock, room drawers,
 guestbook, visitor tracking, owner edit mode + dashboard, demo-mode preview export. Verified end to end with Playwright.
 
+2026-11-09: room records. Every drawer, the Lately feed and the room update lines now render from `Entry` records
+(`/api/entries`, `lib/store.ts`); the owner adds/edits/deletes them in the drawer. hack heatmap, review notes and
+field chips are computed from records. Verified with Playwright (visitor view, owner add/edit/validate/delete, reload).
+
 ## Backlog (rough priority)
 
-1. Real content: replace example data per room; give drawers real data sources the owner can edit (not just title/desc/update).
+1. Real content: the owner replaces the example records per room (editing is done — see Status). Still example-only: poker
+   modes list. Images (game screenshots, book/art pictures) are not supported in records yet.
 2. Storage for deployment: swap `lib/store.ts` to Supabase/Postgres before hosting on Vercel.
 3. Playable rooms: tetris 2-minute mode with leaderboard (`score` events), poker tutorial → AI → realtime tables,
    variant chess with stages.

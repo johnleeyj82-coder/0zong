@@ -1,7 +1,8 @@
 "use client";
 // Browser-side API. With NEXT_PUBLIC_DEMO=1 (the hosted static preview) there is no server, so everything is kept in
 // this browser's localStorage instead, and owner mode uses the demo password "demo". Never enable demo mode in production.
-import type { Dashboard, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
+import type { Dashboard, Entry, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
+import { exampleEntries } from "./examples";
 
 export const DEMO = process.env.NEXT_PUBLIC_DEMO === "1";
 const DEMO_OWNER = "0zong";
@@ -21,7 +22,7 @@ async function call<T>(url: string, init?: RequestInit): Promise<Result<T>> {
 }
 
 /* ---------- demo store (localStorage) ---------- */
-type DemoDB = { visitors: Record<string, Visitor>; messages: Message[]; rooms: Record<string, RoomOverride>; owner: boolean };
+type DemoDB = { visitors: Record<string, Visitor>; messages: Message[]; rooms: Record<string, RoomOverride>; owner: boolean; entries?: Entry[] };
 const KEY = "room.demo.db";
 function demoRead(): DemoDB {
   try {
@@ -137,4 +138,43 @@ export async function getDashboard(): Promise<Result<Dashboard>> {
   const visitors = Object.values(db.visitors).sort((a, b) => b.lastAt - a.lastAt);
   for (const v of visitors) for (const e of v.events) if (e.room && e.type !== "enter" && e.type !== "guestbook") interest[e.room] = (interest[e.room] ?? 0) + (e.type === "open" ? 2 : 1);
   return { ok: true, data: { visitors, interest, messages: [...db.messages].sort((a, b) => b.at - a.at) } };
+}
+
+/* ---------- room entries ---------- */
+export type EntryInput = Omit<Entry, "id" | "example"> & { id?: string };
+
+export async function getEntries(): Promise<Entry[]> {
+  if (DEMO) return [...(demoRead().entries ?? exampleEntries())].sort((a, b) => b.at - a.at);
+  const r = await call<{ entries: Entry[] }>("/api/entries");
+  return r.ok ? r.data.entries : [];
+}
+
+export async function saveEntry(e: EntryInput): Promise<Result<{ entry: Entry }>> {
+  if (!DEMO) return call("/api/entries", { method: "POST", body: JSON.stringify(e) });
+  const db = demoRead();
+  if (!db.owner) return { ok: false, error: "권한이 없어요." };
+  if (!e.title.trim()) return { ok: false, error: "이름을 적어주세요." };
+  const list = (db.entries ??= exampleEntries());
+  const entry: Entry = { ...e, id: e.id ?? crypto.randomUUID(), title: e.title.trim().slice(0, 40) };
+  const i = list.findIndex((x) => x.id === entry.id);
+  if (i >= 0) list[i] = entry; else list.push(entry);
+  demoWrite(db);
+  return { ok: true, data: { entry } };
+}
+
+export async function removeEntry(id: string): Promise<Result<{ ok: boolean }>> {
+  if (!DEMO) return call("/api/entries", { method: "DELETE", body: JSON.stringify({ id }) });
+  const db = demoRead();
+  if (!db.owner) return { ok: false, error: "권한이 없어요." };
+  db.entries = (db.entries ?? exampleEntries()).filter((x) => x.id !== id); demoWrite(db);
+  return { ok: true, data: { ok: true } };
+}
+
+export async function removeExamples(room?: string): Promise<Result<{ removed: number }>> {
+  if (!DEMO) return call("/api/entries", { method: "DELETE", body: JSON.stringify({ examples: true, room }) });
+  const db = demoRead();
+  if (!db.owner) return { ok: false, error: "권한이 없어요." };
+  const before = db.entries ?? exampleEntries();
+  db.entries = before.filter((x) => !x.example || (room !== undefined && x.room !== room)); demoWrite(db);
+  return { ok: true, data: { removed: before.length - db.entries.length } };
 }

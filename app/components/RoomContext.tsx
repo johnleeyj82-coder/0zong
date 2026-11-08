@@ -1,8 +1,10 @@
 "use client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { ROOMS, type Room, type RoomKey } from "../data";
-import { checkOwner, getRoomOverrides, saveRoom, sendEvents } from "@/lib/client";
-import type { EventType, RoomOverride, TrackEvent } from "@/lib/types";
+import { checkOwner, getEntries, getRoomOverrides, removeEntry, removeExamples, saveEntry, saveRoom, sendEvents, type EntryInput } from "@/lib/client";
+import type { Entry, EventType, RoomOverride, TrackEvent } from "@/lib/types";
+import { ago } from "@/lib/time";
+import { SCHEMA } from "../rooms/schema";
 
 /** How this visitor entered: left a name, went anonymous, skipped (never tracked), or is the owner (never tracked). */
 export type Mode = "named" | "anonymous" | "skip" | "owner";
@@ -25,6 +27,13 @@ type Ctx = {
   track: (type: EventType, room?: string, value?: number) => void;
   rooms: Room[];
   editRoom: (key: RoomKey, o: RoomOverride) => Promise<string | null>;
+  /** All room records, newest first. */
+  entries: Entry[];
+  entriesReady: boolean;
+  /** Owner only. Each returns an error message, or null on success. */
+  putEntry: (e: EntryInput) => Promise<string | null>;
+  deleteEntry: (id: string) => Promise<string | null>;
+  clearExamples: (room: RoomKey) => Promise<string | null>;
   drawer: RoomKey | null;
   openDrawer: (key: RoomKey | null) => void;
   dashboard: boolean;
@@ -51,6 +60,8 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
   const [overrides, setOverrides] = useState<Record<string, RoomOverride>>({});
   const [drawer, setDrawer] = useState<RoomKey | null>(null);
   const [dashboard, setDashboard] = useState(false);
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [entriesReady, setEntriesReady] = useState(false);
   const queue = useRef<TrackEvent[]>([]);
   const modeRef = useRef<Mode | null>(null);
   const idRef = useRef("");
@@ -65,6 +76,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     }
     void checkOwner().then((o) => { if (o) { setOwnerState(true); setMode("owner"); modeRef.current = "owner"; } setReady(true); });
     void getRoomOverrides().then(setOverrides);
+    void getEntries().then((e) => { setEntries(e); setEntriesReady(true); });
   }, []);
 
   const flush = useCallback((beacon = false) => {
@@ -99,12 +111,38 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     else { setMode(null); modeRef.current = null; try { localStorage.removeItem(STORE); } catch { /* ignore */ } }
   }, []);
 
-  const rooms = useMemo(() => ROOMS.map((r) => ({ ...r, ...overrides[r.key] })), [overrides]);
+  // The update line ("2시간 전 · 엘든링 +3h") comes from the room's newest record; rooms without records keep the written one.
+  const rooms = useMemo(() => ROOMS.map((r) => {
+    const room = { ...r, ...overrides[r.key] };
+    const latest = entries.find((e) => e.room === r.key);
+    return latest ? { ...room, update: `${ago(latest.at)} · ${SCHEMA[r.key].line(latest)}` } : room;
+  }), [overrides, entries]);
 
   const editRoom = useCallback(async (key: RoomKey, o: RoomOverride) => {
     const r = await saveRoom(key, o);
     if (!r.ok) return r.error;
     setOverrides((cur) => ({ ...cur, [key]: r.data.room }));
+    return null;
+  }, []);
+
+  const byNewest = (list: Entry[]) => [...list].sort((a, b) => b.at - a.at);
+  const putEntry = useCallback(async (e: EntryInput) => {
+    const r = await saveEntry(e);
+    if (!r.ok) return r.error;
+    const saved = r.data.entry;
+    setEntries((cur) => byNewest([...cur.filter((x) => x.id !== saved.id), saved]));
+    return null;
+  }, []);
+  const deleteEntry = useCallback(async (id: string) => {
+    const r = await removeEntry(id);
+    if (!r.ok) return r.error;
+    setEntries((cur) => cur.filter((x) => x.id !== id));
+    return null;
+  }, []);
+  const clearExamples = useCallback(async (room: RoomKey) => {
+    const r = await removeExamples(room);
+    if (!r.ok) return r.error;
+    setEntries((cur) => cur.filter((x) => !(x.example && x.room === room)));
     return null;
   }, []);
 
@@ -115,7 +153,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
 
   const value: Ctx = {
     visitorId, name, mode, owner, returning, ready, phase, setPhase, enter, setOwner, track,
-    rooms, editRoom, drawer, openDrawer, dashboard, setDashboard,
+    rooms, editRoom, entries, entriesReady, putEntry, deleteEntry, clearExamples, drawer, openDrawer, dashboard, setDashboard,
   };
   return <C.Provider value={value}>{children}</C.Provider>;
 }
