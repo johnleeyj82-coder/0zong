@@ -23,10 +23,30 @@ export type Message = { id: string; visitorId: string; name: string; text: strin
 
 export type RoomOverride = { title?: string; desc?: string; update?: string };
 
+/**
+ * One record in a room: a play session, a solved problem, a movie, a practice note…
+ * What each field means depends on the room (see app/rooms/schema.ts).
+ */
+export type Entry = {
+  id: string;
+  room: string;
+  /** When it happened (ms). */
+  at: number;
+  title: string;
+  tag?: string;
+  value?: number;
+  /** Free-text notes; labels come from the room's schema. */
+  notes: string[];
+  /** Seeded example, shown as "예시" until the owner removes it. */
+  example?: boolean;
+};
+
 export type DB = {
   visitors: Record<string, Visitor>;
   messages: Message[];
   rooms: Record<string, RoomOverride>;
+  /** Absent until the owner first edits a record; until then the examples are served. */
+  entries?: Entry[];
   /** The owner's movie records. Missing in older files; empty or missing means the example records are shown. */
   movies?: Movie[];
   /** Music room tracks, in play order. */

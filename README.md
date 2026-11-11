@@ -36,6 +36,7 @@ npm run build && npm start
 | `app/scene/textures.ts` | 나무 바닥, 벽, 천, 러그 무늬를 캔버스에 그려 만드는 재질. |
 | `app/scene/House.tsx` | three.js 장면(react-three-fiber). 그림자, 창으로 드는 햇빛, 전구 빛 번짐까지 여기서 그려요. `/`에서만, 브라우저에서만 불러와요. |
 | `app/stages/` | 물건을 누르면 열리는 취미별 장면 11개. |
+| `app/hobby/` | 취미마다 따로 만든 페이지 (`/art`, `/hack`, `/book`, `/music`, `/video`, `/poker`, `/bar`, `/chess`, `/tetris`). 장면의 버튼을 누르면 여기로 가요. |
 | `app/scene/look.ts` | 시간대 × 날씨 → 하늘·햇빛·램프·창밖 도시 불빛. |
 | `app/components/SceneContext.tsx` | 지금 있는 방(`/?room=`), 고른 물건, 화질, 서울 시간·날씨, 침대로 바꾼 시간. |
 | `app/components/SpaceBar.tsx` | 왼쪽 위: 방 이동 탭, 서울 시각·날씨, 보기 설정(화질, 주인은 날씨 고정). |

@@ -51,7 +51,7 @@ Tokens live in `app/globals.css`. Use only these:
 - Top left (`SpaceBar`): house title, room tabs, `서울 HH:MM · 날씨 온도`, view settings (quality; owner: weather pin).
 - Clicking a hobby object opens its **stage** (`app/stages/`): a full-screen scene with its own art direction and one
   playful interaction (write ink strokes, scratch the record, a terminal you can type in, deal cards, shoot chess
-  squares...). Its records button opens the drawer body inside the scene. The camera never moves. The bed shows the
+  squares...). Its records button goes to that hobby's own page (`app/hobby/pages/`, route = `routeOf(key)`; movie and game have `/movie`, `/game`). A hobby page is designed on its own (its own type, colour and layout under `.hp-<key>`), reads records with `useHobby()`, animates with `useAnime`, and never reuses another page's layout. The camera never moves. The bed shows the
   time picker card instead (this tab only). A new hobby needs its own scene, not a generic card.
 - Doors: hover label "○○으로", click → 0.3s dark blink → that room, camera starting at the door you came through.
 - About + lately and the guestbook are **panels** (right sheets) opened from the dock.

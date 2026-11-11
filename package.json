@@ -12,22 +12,35 @@
     "apochill": "node integrations/apochill/run.mjs"
   },
   "dependencies": {
+    "@number-flow/react": "^0.6.2",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "@react-three/postprocessing": "^3.2.2",
+    "animejs": "^4.5.0",
+    "clsx": "^2.1.1",
+    "d3-array": "^3.2.5",
+    "d3-scale": "^4.0.3",
+    "d3-shape": "^3.2.1",
     "framer-motion": "^11.18.2",
     "lucide-react": "^1.61.0",
+    "motion": "^14.10.1",
     "next": "^15.5.28",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "server-only": "^0.0.1",
+    "tailwind-merge": "^3.7.0",
     "three": "^0.186.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/d3-array": "^3.2.2",
+    "@types/d3-scale": "^4.0.9",
+    "@types/d3-shape": "^3.2.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/three": "^0.186.0",
+    "tailwindcss": "^4.3.5",
     "typescript": "^5.7.0"
   },
   "overrides": {

@@ -2,22 +2,18 @@
 // 게임: the left monitor becomes an old CRT. It powers on from a single bright line, shows a title screen with a
 // blinking PRESS START, then an RPG menu you drive with ↑↓ and Enter. The description talks in a dialog box.
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { SceneProps } from "../Stage";
 import { recordsLabel } from "../Stage";
-import { DEMO, pageHref } from "@/lib/client";
 import { blip } from "../sfx";
 
 export default function GameScene({ room, reduce, openRecords, close }: SceneProps) {
   const [started, setStarted] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [typed, setTyped] = useState(reduce ? room.desc.length : 0);
-  const router = useRouter();
   const screen = useRef<HTMLDivElement>(null);
 
   const items = [
     { label: "이어하기", run: openRecords },
-    { label: "세이브 파일 열기", run: () => (DEMO ? location.assign(pageHref("game")) : router.push(pageHref("game"))) },
     { label: "방으로 나가기", run: close },
   ];
 

@@ -1,22 +1,17 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { ROOMS, SPACES } from "../data";
+import { ROOMS, SPACES, routeOf } from "../data";
 import { DEMO } from "@/lib/client";
+import { ago, dayStart } from "@/lib/time";
+import { SCHEMA } from "../rooms/schema";
+import { PageLink } from "./PageLink";
 import Guestbook from "./Guestbook";
 import Today from "./Today";
 import { useRoom, type Panel } from "./RoomContext";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
-
-const FEED: { when: string; key: string; title: string; note: string }[] = [
-  { when: "10.25 23:40", key: "movie", title: "『퍼펙트 데이즈』 4.5점", note: "반복되는 하루가 이렇게 다정할 수 있다니." },
-  { when: "10.25 21:10", key: "game", title: "엘든링 +3시간 · 말레니아 클리어", note: "2페이즈 패턴은 왼쪽으로 크게 구르기." },
-  { when: "10.25 14:02", key: "hack", title: "2문제 풀이 · 잔디 12일째", note: "지난주 노트 3개 복습 예정." },
-  { when: "10.24 22:30", key: "book", title: "『룬의 아이들』 종족 메모", note: "정령족의 빛 색이 감정에 따라 바뀐다는 설정 추가." },
-  { when: "10.23 01:15", key: "tetris", title: "민수 2분 87줄 신기록", note: "방명록 이름으로 기록됨." },
-];
 
 const HEAD: Record<Panel, { label: string; title: string }> = {
   about: { label: "About this room", title: "취미도, 공부도, 전부 이 집에." },
@@ -25,6 +20,18 @@ const HEAD: Record<Panel, { label: string; title: string }> = {
 };
 
 function About() {
+  const { entries, entriesReady } = useRoom();
+  // One line per hobby per day, so a busy day in one room does not fill the feed.
+  const feed = useMemo(() => {
+    const seen = new Set<string>(), out: typeof entries = [];
+    for (const e of entries) {
+      const k = `${e.room}:${dayStart(e.at)}`;
+      if (seen.has(k)) continue;
+      seen.add(k); out.push(e);
+      if (out.length === 6) break;
+    }
+    return out;
+  }, [entries]);
   return (
     <>
       <p className="drawer-desc">
@@ -42,16 +49,18 @@ function About() {
       <p className="hint">물건에 마우스를 올리면 불이 들어와요. 누르면 그 취미의 기록이, 문을 누르면 옆방이 나와요.</p>
       <img className="frame-img" src={`${DEMO ? "" : "/"}room/about.jpg`} alt="포커 테이블과 듀얼 모니터 책상이 보이는 방 안" loading="lazy" />
       <section aria-labelledby="lately-h">
-        <span className="label">Lately · 예시 기록</span>
+        <span className="label">Lately{feed.some((e) => e.example) && " · 예시 기록"}</span>
         <h3 id="lately-h" className="save-h">요즘 이 집에서 일어난 일</h3>
         <ul className="feed">
-          {FEED.map((f) => {
-            const room = ROOMS.find((r) => r.key === f.key)!;
+          {entriesReady && !feed.length && <li className="feed-empty">아직 남긴 기록이 없어요. 기록이 쌓이면 여기에 최신순으로 보여요.</li>}
+          {feed.map((e) => {
+            const room = ROOMS.find((r) => r.key === e.room);
+            if (!room) return null;
             return (
-              <li key={f.when}>
-                <span className="when">{f.when}</span>
+              <li key={e.id}>
+                <span className="when">{ago(e.at)}</span>
                 <span className="icon-ring" style={{ width: 32, height: 32 }} aria-label={room.label}><room.icon size={15} aria-hidden /></span>
-                <span className="what">{f.title}<small>{f.note}</small></span>
+                <PageLink to={routeOf(room.key)} className="what feed-open">{SCHEMA[room.key].line(e)}{e.notes[0] && <small>{e.notes[0]}</small>}</PageLink>
               </li>
             );
           })}

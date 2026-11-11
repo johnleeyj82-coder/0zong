@@ -27,14 +27,17 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `app/components/RoomStage.tsx` | canvas or still photo (3D off), dark blink between rooms, hover label, hidden keyboard list of objects |
 | `app/components/SpaceBar.tsx` / `Caption.tsx` / `Panels.tsx` | top-left room tabs + time/weather + settings / selected object card (bed = time picker) / about + guestbook sheets |
 | `lib/env.ts` + `app/api/env` | Open-Meteo Seoul weather (30-min cache, `OPEN_METEO_BASE` for tests), time of day, owner weather pin |
-| `app/stages/` | each hobby's own full-screen scene (replaces the old caption card): `Stage.tsx` shell (records panel = drawer body, Esc, view/open tracking), `scenes/<Hobby>.tsx`, `stages.css` (scoped `.sc-<key>`), `sfx.ts` synthesized sounds |
+| `app/stages/` | each hobby's own full-screen scene (replaces the old caption card): `Stage.tsx` shell (its button goes to the hobby page, Esc, view tracking), `scenes/<Hobby>.tsx`, `stages.css` (scoped `.sc-<key>`), `sfx.ts` synthesized sounds |
 | `lib/activity.ts` + `app/api/activity` (+ `token`, `settings`) | Windows helper pings (Bearer token, sha256 only stored) → minutes per Seoul day × category; public view = categories + live category 3 min late (opt-in); owner view adds app names |
 | `public/tools/0zong-helper.ps1` | the Windows helper (PowerShell 5.1, ASCII only): foreground process name → allowlist → `{category, app}` every 30s |
 | `app/components/ActivityContext.tsx` / `Bubble.tsx` / `Today.tsx` / `HelperCard.tsx` | polling / speech bubble over the main-room desk (DOM, positioned by the canvas) / 오늘의 방 panel / owner's helper connect card in the dashboard |
+| `app/hobby/` + `app/{art,hack,book,music,video,poker,bar,chess,tetris}/` | each hobby's own page (the stage's button goes here): `Shell.tsx` (`HobbyShell`, `useHobby()` → room, entries, owner; back link, 예시 tag, owner edit sheet), `anime.ts` (`useAnime` scope, skipped under reduced motion), `pages/<Hobby>.tsx`, `hobby.css` (scoped `.hp-<key>`). whisky's route is `/bar` (`routeOf` in `app/data.ts`) |
+| `app/rooms/schema.ts` + `EntryEditor.tsx` + `lib/examples.ts` | record shape per hobby (`SCHEMA`, `fmt`, `OWN_DATA` = movie/music/game keep their own data), owner add/edit/delete, example records until the owner writes |
+| `components/charts/` | Bklit UI charts (shadcn registry `@bklit`): area, bar, line, heatmap. Import from `@/components/charts` |
 | `app/components/RoomContext.tsx` | visitor identity/mode, event queue + flush, room overrides, drawer/panel/dashboard state |
 | `app/components/Opening.tsx` | lights-on intro + guestbook gate + owner password reveal |
 | `app/components/IconBar.tsx` | fixed dock: hobbies grouped by room (clicking one in another room walks there), about, guestbook |
-| `app/rooms/bodies.tsx` | per-room drawer content (all example data for now; movie reads `getMovies()`) |
+| `app/rooms/bodies.tsx` | per-room drawer content, rendered from `Entry` records (movie, music, game use their own data) |
 | `lib/movies.ts` | movie scoring (6 criteria = 100, stars = total/20), sort, summary; examples in `lib/movies.example.ts` |
 | `app/movie/` + `app/components/movie/` | `/movie` score anatomy page (own route); owner add/edit/delete, TMDB search, 0zong-cinema import |
 | `app/components/music/` | site-wide player (`PlayerProvider` in `app/layout.tsx`): audio engine with generated rain/fire, mini player, listening mode, music drawer |
@@ -48,6 +51,16 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 | `lib/store.ts` | the only storage layer (JSON file `data/db.json`) |
 | `lib/auth.ts` | owner check (scrypt), signed HTTP-only cookie |
 | `lib/client.ts` | browser API; `NEXT_PUBLIC_DEMO=1` switches to localStorage |
+
+## Libraries
+
+- Animation: `framer-motion` (existing code), `motion` v14 (`import { motion } from "motion/react"` for new code), `animejs` v4
+  (`import { animate, stagger } from "animejs"`). In React always go through `useAnime` (scope + revert). Function values
+  need `{ from: fn, to: n }`, not `[fn, n]` (types). Motion AI Kit for Claude Code: `.claude/skills/motion`, `.mcp.json`.
+- Tailwind v4 is loaded **without preflight** (theme + utilities only) so the site's own base styles stay; the site's
+  resets live in `@layer base` so utilities can override them inside chart components. `dark:` always applies.
+- Chart colors are the `--chart-*` tokens in `app/globals.css`; a hobby page overrides them on its own wrapper
+  (`.hk-chart`, `.pk-chart`). Don't paste Bklit's default purple/light values back in.
 
 ## Invariants (don't break these)
 
@@ -67,6 +80,10 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 - Every hobby scene has its own art direction (ink, vinyl, film leader, VHS, book, CRT, terminal, felt, bar, board,
   handheld); never fall back to a shared card. Scenes honor reduced motion (settled state), and the 3D canvas stops
   drawing while one is open. Stage CSS class names are prefixed per scene (the drawer bodies own generic names).
+- Hobby pages scroll (only `/` does not). Each has its own art direction and class prefix; elements are visible by
+  default and anime.js only animates them in, so reduced motion and no-JS still show everything.
+- Room records (`Entry`) are the single source for hobby pages, drawer bodies, the Lately feed and each room's update
+  line (except `OWN_DATA` rooms). Only the owner writes them; examples disappear once the owner edits that room.
 - drei `<Html>` renders nothing here (React 19 root): DOM over the canvas is normal React, moved by a `useFrame` projection.
 - Never store IP, user agent, or location. `skip` and `owner` modes send no events.
 - Password hash format `scrypt:<salt>:<hash>` — no `$` (dotenv expands it). Secrets only in `.env.local`.
@@ -86,6 +103,9 @@ Done: 3D house phase 1 (spec `docs/superpowers/specs/2026-10-29-3d-room-design.m
 furniture, doors, captions → drawers, bed time picker, Seoul time + weather, quality presets + still fallback. The old
 scroll hero and its 202 frames are gone. Phase 2 (2026-10-31): Windows helper + token, speech bubble, 오늘의 방
 (the .ps1 was written without a Windows machine to run it on: first real run is the owner's). Hobby stages (11 scenes).
+2026-11-11: merged `feat/room-entries` (records, anime.js, Motion, Bklit charts) and gave nine hobbies their own pages
+(`/art` 화첩, `/hack` terminal, `/book` shelf, `/music` crate, `/video` timeline, `/poker` ledger, `/bar` menu, `/chess`
+tower, `/tetris` hi-score); `/movie` and `/game` already had theirs.
 2026-11-11: rooms remodelled in code (rounded and turned shapes, textures, real window light, bloom). Also: movie,
 music, game rooms, guestbook, tracking, owner mode, demo export.
 

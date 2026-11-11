@@ -62,3 +62,6 @@ export const ROOMS: Room[] = [
     update: "신기록 · 민수 2분 87줄" },
 ];
 
+
+/** Each hobby's own page. The bar is the only one whose address differs from its key. */
+export const routeOf = (k: RoomKey) => (k === "whisky" ? "bar" : k);

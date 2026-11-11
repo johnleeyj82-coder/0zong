@@ -4,11 +4,12 @@
 import "server-only";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import type { ActivityRecord, DB, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
+import type { ActivityRecord, DB, Entry, Message, RoomOverride, TrackEvent, Visitor, VisitMode } from "./types";
 import type { Movie } from "./movies";
 import type { Track } from "./music";
 import type { GameDetails, GameSettings, Note, Presence, Shot, Slot, SteamSnapshot } from "./games";
 import { EXAMPLE_MOVIES } from "./movies.example";
+import { exampleEntries } from "./examples";
 import { seoulDate, type EnvOverride } from "./env";
 import { KEEP_DAYS, MAX_CREDIT_MS, type Category } from "./activity";
 
@@ -273,6 +274,48 @@ export function setEnvOverride(o: EnvOverride): Promise<EnvOverride> {
   return mutate((db) => {
     db.settings = { ...db.settings, envOverride: o };
     return o;
+  });
+}
+
+/* ---------- room entries ---------- */
+const MAX_ENTRIES = 5000;
+/** The examples are served until the owner first changes something; then they are copied in and edited like any record. */
+const entriesOf = (db: DB) => (db.entries ??= exampleEntries());
+
+export async function listEntries(): Promise<Entry[]> {
+  const db = await read();
+  return (db.entries ?? exampleEntries()).sort((a, b) => b.at - a.at);
+}
+
+/** Creates the entry, or replaces the one with the same id. */
+export function putEntry(e: Entry): Promise<Entry> {
+  return mutate((db) => {
+    const list = entriesOf(db);
+    const i = list.findIndex((x) => x.id === e.id);
+    if (i >= 0) list[i] = e;
+    else { list.push(e); if (list.length > MAX_ENTRIES) list.splice(0, list.length - MAX_ENTRIES); }
+    return e;
+  });
+}
+
+export function deleteEntry(id: string): Promise<boolean> {
+  return mutate((db) => {
+    const list = entriesOf(db);
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return false;
+    list.splice(i, 1);
+    return true;
+  });
+}
+
+/** Removes every example record in one room (or all rooms). */
+export function clearExamples(room?: string): Promise<number> {
+  return mutate((db) => {
+    const list = entriesOf(db);
+    const keep = list.filter((x) => !x.example || (room !== undefined && x.room !== room));
+    const removed = list.length - keep.length;
+    db.entries = keep;
+    return removed;
   });
 }
 

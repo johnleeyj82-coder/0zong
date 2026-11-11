@@ -4,15 +4,9 @@ import { Eye, EyeOff } from "lucide-react";
 import { getMessages, hideMessage, postMessage } from "@/lib/client";
 import type { Message } from "@/lib/types";
 import { useRoom } from "./RoomContext";
+import { ago } from "@/lib/time";
 
-export function ago(at: number) {
-  const s = Math.max(1, Math.round((Date.now() - at) / 1000));
-  if (s < 60) return "방금";
-  const m = Math.round(s / 60); if (m < 60) return `${m}분 전`;
-  const h = Math.round(m / 60); if (h < 24) return `${h}시간 전`;
-  const d = Math.round(h / 24); if (d < 30) return `${d}일 전`;
-  return new Date(at).toLocaleDateString("ko-KR");
-}
+export { ago };
 
 /** The guestbook: form on top, public messages below. Opened from the dock as a panel. */
 export default function Guestbook() {

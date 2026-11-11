@@ -6,15 +6,6 @@
   background: color-mix(in srgb, var(--t-bg, #15100c) 70%, transparent); border: 1px solid color-mix(in srgb, var(--t-ink, #f3eadb) 25%, transparent);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: transform 0.2s; }
 .stage-tool:hover { transform: rotate(90deg); }
-.stage-records { position: absolute; z-index: 6; top: 0; right: 0; bottom: 0; width: min(560px, 100%); overflow-y: auto;
-  padding: calc(1.4rem + env(safe-area-inset-top, 0px)) 1.5rem calc(5rem + env(safe-area-inset-bottom, 0px));
-  background: var(--t-panel, var(--bg-raise)); color: var(--t-panel-ink, var(--text)); border-left: 1px solid var(--t-line, var(--border));
-  display: flex; flex-direction: column; gap: 1rem; font-family: var(--body); }
-.stage-records-head { display: flex; flex-direction: column; gap: 0.6rem; padding-right: 3rem; }
-.stage-records-head h2 { font-family: var(--t-display, var(--display)); font-size: 2rem; line-height: 1.1; color: var(--t-accent, var(--accent)); }
-.stage-back { align-self: flex-start; display: inline-flex; gap: 0.4rem; align-items: center; font-size: 0.85rem; color: inherit; opacity: 0.75; }
-.stage-back:hover { opacity: 1; }
-.stage-records-desc { font-family: var(--mono); font-size: 0.78rem; color: var(--t-accent, var(--accent)); }
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 
