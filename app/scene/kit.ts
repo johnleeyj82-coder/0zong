@@ -5,11 +5,27 @@ import type { RoomKey, SpaceId } from "../data";
 
 export type Vec3 = [number, number, number];
 
-type PartBase = { at: Vec3; color: string; rot?: Vec3; /** self-lit colour (screens, bulbs) */ glow?: string; glowI?: number; opacity?: number };
+/** Procedural surface patterns (drawn on a canvas once, see textures.ts). The part's colour tints them. */
+export type Tex = "planks" | "grain" | "plaster" | "fabric" | "felt" | "rug";
+
+type PartBase = {
+  at: Vec3; color: string; rot?: Vec3;
+  /** Stretch after shaping (a ball becomes an ellipsoid). */
+  scale?: Vec3;
+  /** self-lit colour (screens, bulbs) */
+  glow?: string; glowI?: number; opacity?: number;
+  /** 0 mirror – 1 chalk (default 0.75), and 0–1 metal. */
+  rough?: number; metal?: number;
+  tex?: Tex;
+};
 export type Part =
   | (PartBase & { kind: "box"; size: Vec3 })
+  /** A box with rounded edges: cushions, mattresses, anything soft or moulded. */
+  | (PartBase & { kind: "rbox"; size: Vec3; radius?: number })
   | (PartBase & { kind: "cyl"; r: number; h: number; r2?: number; seg?: number })
-  | (PartBase & { kind: "ball"; r: number });
+  | (PartBase & { kind: "ball"; r: number })
+  /** A profile [radius, height] spun around the y axis: lamp shades, bottles, chess pieces, pots. */
+  | (PartBase & { kind: "lathe"; pts: [number, number][]; seg?: number });
 
 export type View = { pos: Vec3; target: Vec3 };
 
@@ -57,54 +73,28 @@ export const box = (w: number, h: number, d: number, x: number, y: number, z: nu
   ({ kind: "box", size: [w, h, d], at: [x, y + h / 2, z], color, ...o });
 
 /** A cylinder standing on `y`. `r2` makes it a cone-ish shade (top radius r2, bottom r). */
-export const cyl = (r: number, h: number, x: number, y: number, z: number, color: string, o: Partial<PartBase> & { r2?: number } = {}): Part =>
+export const cyl = (r: number, h: number, x: number, y: number, z: number, color: string, o: Partial<PartBase> & { r2?: number; seg?: number } = {}): Part =>
   ({ kind: "cyl", r, h, at: [x, y + h / 2, z], color, ...o });
 
 export const ball = (r: number, x: number, y: number, z: number, color: string, o: Partial<PartBase> = {}): Part =>
   ({ kind: "ball", r, at: [x, y, z], color, ...o });
 
-/* ---------- shared furniture ---------- */
-export const C = {
-  wood: "#6b4a32", woodDark: "#3f2b1e", woodLight: "#8a6444", black: "#18161a", metal: "#5d5a58",
-  cream: "#e8dcc6", felt: "#2f5c47", leather: "#2a2622", green: "#3c4a33", plant: "#3f6b3a", rug: "#6e2a2a",
-  bulb: "#ffd59a", screenNight: "#24324d", paper: "#f1ebe0",
-};
+/** A rounded box standing on `y`. */
+export const rbox = (w: number, h: number, d: number, x: number, y: number, z: number, color: string, o: Partial<PartBase> & { radius?: number } = {}): Part =>
+  ({ kind: "rbox", size: [w, h, d], at: [x, y + h / 2, z], color, ...o });
 
-/** A lamp head that glows (pairs with a Lamp light at the same spot). */
-export const bulb = (x: number, y: number, z: number, r = 0.07) => ball(r, x, y, z, C.bulb, { glow: C.bulb, glowI: 2.2 });
+/** A spun profile whose y = 0 sits on `y`. */
+export const lathe = (pts: [number, number][], x: number, y: number, z: number, color: string, o: Partial<PartBase> & { seg?: number } = {}): Part =>
+  ({ kind: "lathe", pts, at: [x, y, z], color, ...o });
 
-export const plant = (x: number, z: number, h = 0.9): Part[] => [
-  cyl(0.16, 0.3, x, 0, z, "#8b6f55", { r2: 0.2 }),
-  ball(h * 0.35, x, 0.3 + h * 0.35, z, C.plant),
-  ball(h * 0.25, x + 0.12, 0.3 + h * 0.6, z - 0.05, "#4b7a42"),
-];
+/** An ellipsoid centred on x/y/z. */
+export const ell = (rx: number, ry: number, rz: number, x: number, y: number, z: number, color: string, o: Partial<PartBase> = {}): Part =>
+  ({ kind: "ball", r: 1, scale: [rx, ry, rz], at: [x, y, z], color, ...o });
 
-/** A framed poster flat on a wall: `rotY` turns it to face into the room. */
-export const poster = (w: number, h: number, x: number, y: number, z: number, color: string, rotY = 0): Part[] => [
-  { kind: "box", size: [w + 0.06, h + 0.06, 0.03], at: [x, y, z], color: C.black, rot: [0, rotY, 0] },
-  { kind: "box", size: [w, h, 0.035], at: [x, y, z], color, rot: [0, rotY, 0], glow: color, glowI: 0.08 },
-];
+/** A horizontal rod centred on x/y/z, along the x or z axis. */
+export const rod = (len: number, r: number, x: number, y: number, z: number, axis: "x" | "z", color: string, o: Partial<PartBase> = {}): Part =>
+  ({ kind: "cyl", r, h: len, at: [x, y, z], rot: axis === "x" ? [0, 0, Math.PI / 2] : [Math.PI / 2, 0, 0], color, seg: 12, ...o });
 
-/* ---------- small props that make a room feel lived in ---------- */
-/** A string of warm bulbs from a to b (with a little sag). */
-export const stringLights = (a: Vec3, b: Vec3, n = 14, sag = 0.12): Part[] =>
-  Array.from({ length: n }, (_, i) => {
-    const t = i / (n - 1);
-    const y = a[1] + (b[1] - a[1]) * t - Math.sin(t * Math.PI) * sag;
-    return ball(0.022, a[0] + (b[0] - a[0]) * t, y, a[2] + (b[2] - a[2]) * t, C.bulb, { glow: i % 3 ? C.bulb : "#ffc27a", glowI: 2.4 });
-  });
-
-/** A short stack of books lying flat. */
-export const bookStack = (x: number, y: number, z: number, n = 3): Part[] =>
-  Array.from({ length: n }, (_, i) =>
-    box(0.24 - i * 0.02, 0.04, 0.17 - i * 0.01, x + (i % 2 ? 0.015 : -0.01), y + i * 0.04, z, ["#7a3b2c", "#2f4f6b", "#c9a24a", "#5a6b3a"][i % 4], { rot: [0, (i - 1) * 0.15, 0] }));
-
-export const mug = (x: number, y: number, z: number, color = C.cream): Part[] => [
-  cyl(0.04, 0.09, x, y, z, color), cyl(0.034, 0.005, x, y + 0.088, z, "#3a2416"),
-];
-
-/** A wall frame (rotY turns it to face into the room). */
-export const frame = (w: number, h: number, x: number, y: number, z: number, color: string, rotY = 0): Part[] => [
-  { kind: "box", size: [w + 0.04, h + 0.04, 0.025], at: [x, y, z], color: C.woodLight, rot: [0, rotY, 0] },
-  { kind: "box", size: [w, h, 0.03], at: [x, y, z], color, rot: [0, rotY, 0] },
-];
+/** Moves a list of parts (for placing a small prop on top of furniture). */
+export const move = (parts: Part[], dx: number, dy: number, dz: number): Part[] =>
+  parts.map((p) => ({ ...p, at: [p.at[0] + dx, p.at[1] + dy, p.at[2] + dz] as Vec3 }));

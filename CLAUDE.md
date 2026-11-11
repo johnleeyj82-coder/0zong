@@ -22,7 +22,7 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 |---|---|
 | `app/page.tsx` | composition: RoomProvider > SceneProvider > RoomStage, SpaceBar, Caption, Opening, IconBar, RoomDrawer, Panels, DashboardOverlay |
 | `app/data.ts` | ROOMS (hobbies: copy, icon, `space`), SPACES (main, cinema, bedroom) |
-| `app/scene/` | the 3D house (react-three-fiber, loaded only on `/`): `kit.ts` types + placeholder helpers, `spaces/<id>.ts` one room each (shell, things, doors, lamps, camera), `look.ts` time × weather → lighting, `House.tsx` canvas |
+| `app/scene/` | the 3D house (react-three-fiber, loaded only on `/`): `kit.ts` part types (box, rbox, cyl, ball, lathe) + helpers, `furniture.ts` every piece of furniture modelled from those parts, `textures.ts` canvas-drawn surfaces (planks, grain, plaster, fabric, felt, rug), `spaces/<id>.ts` one room each (things, doors, lamps, camera), `look.ts` time × weather → lighting, `House.tsx` canvas (merged meshes per thing, shadows, contact shadows, bloom) |
 | `app/components/SceneContext.tsx` | current room (`?room=`), selection/hover, quality, Seoul env, bed time override (sessionStorage) |
 | `app/components/RoomStage.tsx` | canvas or still photo (3D off), dark blink between rooms, hover label, hidden keyboard list of objects |
 | `app/components/SpaceBar.tsx` / `Caption.tsx` / `Panels.tsx` | top-left room tabs + time/weather + settings / selected object card (bed = time picker) / about + guestbook sheets |
@@ -52,7 +52,12 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
 ## Invariants (don't break these)
 
 - `/` never scrolls. Selecting an object never moves the camera (a `focus` slot is reserved for later); no tours.
-- Rooms are data (`app/scene/spaces/`): a GLB replaces a placeholder by setting `model`, never by editing the scene code.
+- Rooms are data (`app/scene/spaces/`), furniture is built in `app/scene/furniture.ts` from parts; no image or model
+  files are needed. A GLB may later replace a thing by setting `model` (not wired yet), never by editing the scene code.
+- Quality: low = no shadows, no post-processing, painted window light (phones); medium/high = the sun stands outside
+  and only enters through the window (an unseen ceiling casts the shadow), contact shadows, bloom. Parts with the same
+  look inside a thing are merged into one mesh: keep it that way (a bookcase is ~10 draw calls, not 100).
+- Keep the front 1.5 m of each room low (≤ 0.6 m) and tall things on the side walls, or they block the camera.
 - Outside the window draws only through the window's stencil (the rooms have no ceiling).
 - The bed's time is per tab and never sent anywhere; the owner's weather pin is for everyone.
 - UI on top of the canvas is never gated on the 3D loading; without WebGL the still photo + dock still work.
@@ -75,12 +80,14 @@ npm run export-preview    # static demo-mode copy in ./out (no server, demo pass
   is off by default and turning it off deletes the stored status.
 - The TMDB key stays on the server; movie writes and `/api/tmdb` are owner only. Poster paths must match TMDB's `/x.jpg` form.
 
-## Status (2026-10-29)
+## Status (2026-11-11)
 
 Done: 3D house phase 1 (spec `docs/superpowers/specs/2026-10-29-3d-room-design.md`): three rooms with placeholder
 furniture, doors, captions → drawers, bed time picker, Seoul time + weather, quality presets + still fallback. The old
 scroll hero and its 202 frames are gone. Phase 2 (2026-10-31): Windows helper + token, speech bubble, 오늘의 방
-(the .ps1 was written without a Windows machine to run it on: first real run is the owner's). Also: movie, music, game rooms, guestbook, tracking, owner mode, demo export.
+(the .ps1 was written without a Windows machine to run it on: first real run is the owner's). Hobby stages (11 scenes).
+2026-11-11: rooms remodelled in code (rounded and turned shapes, textures, real window light, bloom). Also: movie,
+music, game rooms, guestbook, tracking, owner mode, demo export.
 
 ## Backlog (rough priority)
 
@@ -88,5 +95,6 @@ scroll hero and its 202 frames are gone. Phase 2 (2026-10-31): Windows helper + 
 2. Storage for deployment: swap `lib/store.ts` to Supabase/Postgres before hosting on Vercel.
 3. Playable rooms: tetris 2-minute mode with leaderboard (`score` events), poker tutorial → AI → realtime tables,
    variant chess with stages.
-5. 3D phases 3–4: Tripo models (`npm run models`) + character + events, owner arrange mode.
-6. Mobile polish of the tour framing; Lighthouse/accessibility pass; deploy.
+4. 3D phases 3–4 (plan: `docs/superpowers/specs/2026-11-02-phase3-models-plan.md`): character + events, optional GLB
+   models for hero objects (`npm run models`), owner arrange mode.
+5. Mobile framing of the rooms; Lighthouse/accessibility pass; deploy.
